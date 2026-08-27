@@ -14,11 +14,14 @@ import {
   LogOut,
   Plus,
   X,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
 const INVENTORY_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-inventory";
 const SHIFTS_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-shifts";
+const RESET_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-reset-data";
 
 const LEDGER_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-ledger-data";
 const ADMIN_USERNAME = "admincaffe";
@@ -534,6 +537,10 @@ export default function LedgerDashboard() {
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [selected, setSelected] = useState(new Set());
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -680,6 +687,103 @@ export default function LedgerDashboard() {
     URL.revokeObjectURL(url);
   }
 
+  async function downloadFullBackupPdf(allOrders, allShifts, allInventory) {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+    const stamp = new Date().toLocaleString("en-US");
+
+    doc.setFontSize(18);
+    doc.text("Cafe Brewm - Full Backup", 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated before reset: ${stamp}`, 14, 24);
+
+    doc.setFontSize(13);
+    doc.setTextColor(20);
+    doc.text(`Orders (${allOrders.length})`, 14, 36);
+    autoTable(doc, {
+      startY: 40,
+      head: [["Order #", "Customer", "Staff", "Date", "Time", "Total", "Profit"]],
+      body: allOrders.map((o) => [
+        o.orderNumber, o.customer, o.staff || "-", o.date, o.time, `P${peso(o.total)}`, `P${peso(o.profit)}`,
+      ]),
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [30, 41, 59] },
+    });
+
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.text(`Staff Shifts (${allShifts.length})`, 14, 18);
+    autoTable(doc, {
+      startY: 24,
+      head: [["Staff", "Time In", "Time Out", "Status", "Orders", "Sales", "Profit"]],
+      body: allShifts.map((s) => [
+        s.staffName,
+        `${s.dayIn}, ${s.dateIn} ${s.timeIn}`,
+        s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "Active",
+        s.status,
+        s.orderCount,
+        `P${peso(s.totalSales)}`,
+        `P${peso(s.totalProfit)}`,
+      ]),
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [30, 41, 59] },
+    });
+
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.text(`Inventory (${allInventory.length})`, 14, 18);
+    autoTable(doc, {
+      startY: 24,
+      head: [["Item", "Category", "Quantity", "Unit", "Low stock at"]],
+      body: allInventory.map((it) => [it.name, it.category, it.quantity, it.unit, it.lowStockThreshold]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 41, 59] },
+    });
+
+    doc.save(`cafe-brewm-backup-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  async function handleResetConfirm() {
+    setResetLoading(true);
+    setResetError(null);
+    try {
+      const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
+        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+      ]);
+      const allOrders = ordersRes.orders || [];
+      const allShifts = shiftsRes.shifts || [];
+      const allInventory = inventoryRes.items || [];
+
+      await downloadFullBackupPdf(allOrders, allShifts, allInventory);
+
+      const recordCount = allOrders.length + allShifts.length + allInventory.length;
+      const minDelay = Math.min(4000, Math.max(1200, 400 + recordCount * 60));
+
+      const [resetResult] = await Promise.all([
+        fetch(RESET_API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+          .then((r) => r.json())
+          .catch(() => null),
+        new Promise((resolve) => setTimeout(resolve, minDelay)),
+      ]);
+
+      if (!resetResult?.success) {
+        setResetError("Na-download ang backup, pero hindi na-confirm ang reset. Check kung Active ang n8n workflow.");
+        setResetLoading(false);
+        return;
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setResetError("May error habang nire-reset. Subukan ulit.");
+      setResetLoading(false);
+    }
+  }
+
   if (!authed) {
     return (
       <LoginScreen
@@ -727,6 +831,13 @@ export default function LedgerDashboard() {
               Export CSV
             </button>
             <button
+              onClick={() => { setResetOpen(true); setResetConfirmText(""); setResetError(null); }}
+              className="flex items-center gap-1.5 rounded-md border border-rose-200 bg-white text-sm font-medium text-rose-600 px-3 py-2 hover:bg-rose-50 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Reset Data
+            </button>
+            <button
               onClick={logout}
               className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-500 px-3 py-2 hover:bg-slate-50 hover:text-slate-900 transition-colors"
             >
@@ -734,6 +845,55 @@ export default function LedgerDashboard() {
             </button>
           </div>
         </div>
+
+        {resetOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-lg p-6">
+              {resetLoading ? (
+                <div className="text-center py-4">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-4 text-slate-900 animate-spin" />
+                  <p className="text-sm font-medium text-slate-900 mb-1">Gumagawa ng backup PDF at nililinis ang data…</p>
+                  <p className="text-xs text-slate-400">Huwag isara ang tab na ito.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-3 text-rose-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    <h3 className="text-base font-semibold">Reset lahat ng data?</h3>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Permanenteng mabubura ang <strong>lahat</strong> ng orders, customers, staff shifts, at inventory — sa Google Sheets AT MySQL. Awtomatikong gagawa muna ng backup PDF bago ito magpatuloy. Hindi na maibabalik ito pagkatapos.
+                  </p>
+                  {resetError && <p className="text-sm text-rose-600 mb-3">{resetError}</p>}
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                    I-type ang <strong>RESET</strong> para kumpirmahin:
+                  </label>
+                  <input
+                    value={resetConfirmText}
+                    onChange={(e) => setResetConfirmText(e.target.value)}
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-rose-500 mb-4"
+                    placeholder="RESET"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setResetOpen(false)}
+                      className="rounded-md border border-slate-200 text-sm font-medium text-slate-600 px-3.5 py-2 hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleResetConfirm}
+                      disabled={resetConfirmText !== "RESET"}
+                      className="rounded-md bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+                    >
+                      Backup + Reset
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center gap-1 mb-5 border-b border-slate-200">

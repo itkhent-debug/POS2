@@ -1,0 +1,152 @@
+{
+  "name": "POS Reset Data",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Sa 4 MySQL node dito, piliin ang existing \"MySQL account\" credential.\n2. Sa 3 Google Sheets \"Clear\" node, piliin ang existing \"Google Sheets account\" credential — dokumento IDs na naka-preset na (parehong Main Ledger / Backup Ledger / Customers sheets na ginamit sa POS Ledger & CRM workflow).\n3. Activate.\n4. Ito ay MAPANGANIB na endpoint — permanenteng bubura ito ng LAHAT ng orders, customers, shifts, at inventory. Dapat lang tawagin ito galing sa \"Reset Data\" button sa Ledger Dashboard (naka-confirm dialog na, at gumagawa ng PDF backup bago tumawag dito).",
+        "height": 280,
+        "width": 380
+      },
+      "id": "note-node",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-500, -120]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pos-reset-data",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "webhook-reset",
+      "name": "Reset Data Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-400, 200],
+      "webhookId": "pos-reset-data"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM orders",
+        "options": {}
+      },
+      "id": "clear-orders",
+      "name": "Clear MySQL Orders",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-180, 200],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM customers",
+        "options": {}
+      },
+      "id": "clear-customers",
+      "name": "Clear MySQL Customers",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [40, 200],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM shifts",
+        "options": {}
+      },
+      "id": "clear-shifts",
+      "name": "Clear MySQL Shifts",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [260, 200],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM inventory",
+        "options": {}
+      },
+      "id": "clear-inventory",
+      "name": "Clear MySQL Inventory",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [480, 200],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "clear",
+        "documentId": { "__rl": true, "value": "1hphbw2OXPi2Mq0RVtauzbfG9YmfQvx8EBRFkzXmplC4", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "options": {}
+      },
+      "id": "clear-sheet-ledger",
+      "name": "Clear Sheet: Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [700, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "clear",
+        "documentId": { "__rl": true, "value": "1ykV0fyiakd60YV2j_1AgBkX0cHhcTp5ggeNg1G-CeUg", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "options": {}
+      },
+      "id": "clear-sheet-backup",
+      "name": "Clear Sheet: Backup Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [920, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "clear",
+        "documentId": { "__rl": true, "value": "1hv-xA7ONxYLrqkva3AtOU50Sg5hgL7FwH7zHpqsrrB0", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "options": {}
+      },
+      "id": "clear-sheet-customers",
+      "name": "Clear Sheet: Customers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1140, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Nalinis ang lahat ng data.\" } }}",
+        "options": {}
+      },
+      "id": "respond-reset",
+      "name": "Respond Reset",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1360, 200]
+    }
+  ],
+  "connections": {
+    "Reset Data Webhook": { "main": [[{ "node": "Clear MySQL Orders", "type": "main", "index": 0 }]] },
+    "Clear MySQL Orders": { "main": [[{ "node": "Clear MySQL Customers", "type": "main", "index": 0 }]] },
+    "Clear MySQL Customers": { "main": [[{ "node": "Clear MySQL Shifts", "type": "main", "index": 0 }]] },
+    "Clear MySQL Shifts": { "main": [[{ "node": "Clear MySQL Inventory", "type": "main", "index": 0 }]] },
+    "Clear MySQL Inventory": { "main": [[{ "node": "Clear Sheet: Ledger", "type": "main", "index": 0 }]] },
+    "Clear Sheet: Ledger": { "main": [[{ "node": "Clear Sheet: Backup Ledger", "type": "main", "index": 0 }]] },
+    "Clear Sheet: Backup Ledger": { "main": [[{ "node": "Clear Sheet: Customers", "type": "main", "index": 0 }]] },
+    "Clear Sheet: Customers": { "main": [[{ "node": "Respond Reset", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
