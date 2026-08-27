@@ -492,7 +492,8 @@ export default function PosApp() {
         `}</style>
         <div className="w-[320px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
           <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>👋</div>
-          <p className="font-medium text-lg mb-4" style={{ fontFamily: "'Fraunces', serif" }}>Shift Summary — {currentStaff}</p>
+          <p className="font-medium text-lg mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Bye, {currentStaff}! Ingat!</p>
+          <p className="text-xs text-neutral-400 mb-4">Shift Summary</p>
 
           <div className="space-y-3 text-left">
             <div className="rounded-sm border border-neutral-200 px-4 py-2.5">
