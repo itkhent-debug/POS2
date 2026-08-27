@@ -7,41 +7,159 @@ import {
   RefreshCw,
   Bell,
   Printer,
-  ArrowLeft,
   Wallet,
   CreditCard,
   Banknote,
   Coffee,
   CupSoda,
-  Croissant,
   Sandwich,
-  Cookie,
-  Soup,
   Cake,
   Check,
+  LogOut,
+  Utensils,
+  Drumstick,
+  Flame,
+  GlassWater,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
+const STAFF_ACCOUNTS = [
+  { name: "Juan", password: "juan123" },
+  { name: "Maria", password: "maria123" },
+];
+const CLOCKIN_URL = "https://tech12312.app.n8n.cloud/webhook/pos-clockin";
+const CLOCKOUT_URL = "https://tech12312.app.n8n.cloud/webhook/pos-clockout";
+const SHIFT_KEY = "cafe-brewm-pos-shift";
+
 const PRODUCTS = [
-  { id: 1, name: "Espresso", category: "Coffee", price: 3.5, icon: Coffee },
-  { id: 2, name: "Cappuccino", category: "Coffee", price: 4.5, icon: Coffee },
-  { id: 3, name: "Caffè Latte", category: "Coffee", price: 4.75, icon: Coffee },
-  { id: 4, name: "Flat White", category: "Coffee", price: 4.25, icon: Coffee },
-  { id: 5, name: "Americano", category: "Coffee", price: 3.75, icon: Coffee },
-  { id: 6, name: "Cold Brew", category: "Cold Brew", price: 4.8, icon: CupSoda },
-  { id: 7, name: "Iced Latte", category: "Cold Brew", price: 5.0, icon: CupSoda },
-  { id: 8, name: "Nitro Cold Brew", category: "Cold Brew", price: 5.5, originalPrice: 6.0, icon: CupSoda },
-  { id: 9, name: "Butter Croissant", category: "Pastries", price: 3.25, icon: Croissant },
-  { id: 10, name: "Almond Croissant", category: "Pastries", price: 3.95, icon: Croissant },
-  { id: 11, name: "Oat Cookie", category: "Pastries", price: 2.5, icon: Cookie },
-  { id: 12, name: "Turkey Club", category: "Sandwiches", price: 8.5, icon: Sandwich },
-  { id: 13, name: "Caprese Panini", category: "Sandwiches", price: 7.95, icon: Sandwich },
-  { id: 14, name: "Tomato Basil Soup", category: "Sandwiches", price: 5.25, icon: Soup },
-  { id: 15, name: "Pumpkin Spice Latte", category: "Seasonal", price: 5.25, originalPrice: 5.75, icon: Coffee },
-  { id: 16, name: "Carrot Cake Slice", category: "Seasonal", price: 4.5, icon: Cake },
+  // Espresso
+  { id: 1, name: "Americano", category: "Espresso", price: 100, icon: Coffee },
+  { id: 2, name: "Cafe Latte", category: "Espresso", price: 120, icon: Coffee },
+  { id: 3, name: "Spanish Latte", category: "Espresso", price: 140, icon: Coffee },
+  { id: 4, name: "Mocha Cloud", category: "Espresso", price: 140, icon: Coffee },
+  { id: 5, name: "Brown Sugar Ice Shake", category: "Espresso", price: 140, icon: Coffee },
+  { id: 6, name: "Salted Caramel Ice Shaken", category: "Espresso", price: 140, icon: Coffee },
+  { id: 7, name: "Pistachio Cream", category: "Espresso", price: 160, icon: Coffee },
+  { id: 8, name: "Lotus Biscoff Cream", category: "Espresso", price: 170, icon: Coffee },
+  { id: 9, name: "Barista Drink", category: "Espresso", price: 160, icon: Coffee },
+  { id: 10, name: "Sea Salt Cream", category: "Espresso", price: 160, icon: Coffee },
+  { id: 11, name: "Vanilla With Coffee Jelly", category: "Espresso", price: 160, icon: Coffee },
+  { id: 12, name: "Black Forrest", category: "Espresso", price: 160, icon: Coffee },
+  { id: 13, name: "Ca Phe Trung (Vietnamese)", category: "Espresso", price: 160, icon: Coffee },
+
+  // Non-Coffee
+  { id: 14, name: "Matcha Latte", category: "Non-Coffee", price: 140, icon: CupSoda },
+  { id: 15, name: "Strawberry Milk", category: "Non-Coffee", price: 120, icon: CupSoda },
+  { id: 16, name: "Blueberry Milk", category: "Non-Coffee", price: 120, icon: CupSoda },
+  { id: 17, name: "Strawberry Matcha", category: "Non-Coffee", price: 160, icon: CupSoda },
+  { id: 18, name: "Chocolate Strawberry", category: "Non-Coffee", price: 160, icon: CupSoda },
+  { id: 19, name: "Milky White", category: "Non-Coffee", price: 120, icon: CupSoda },
+  { id: 20, name: "Chocolate Milk", category: "Non-Coffee", price: 120, icon: CupSoda },
+
+  // Refreshers (Mocktail)
+  { id: 21, name: "Strawberry Lychee Mojito", category: "Refreshers", price: 130, icon: GlassWater },
+  { id: 22, name: "Blue Lagoon", category: "Refreshers", price: 130, icon: GlassWater },
+  { id: 23, name: "Blueberry Lime", category: "Refreshers", price: 130, icon: GlassWater },
+  { id: 24, name: "Sunrise Mocktail", category: "Refreshers", price: 130, icon: GlassWater },
+
+  // Blended - Coffee Based
+  { id: 25, name: "Darko Choco Chips", category: "Blended", price: 170, icon: CupSoda },
+  { id: 26, name: "Darko Blended", category: "Blended", price: 160, icon: CupSoda },
+  { id: 27, name: "Lotus Biscoff Blended", category: "Blended", price: 190, icon: CupSoda },
+  { id: 28, name: "Caramel Blended", category: "Blended", price: 160, icon: CupSoda },
+  { id: 29, name: "Coffee Jelly Blended", category: "Blended", price: 170, icon: CupSoda },
+  { id: 30, name: "Caramel Coffee Jelly", category: "Blended", price: 180, icon: CupSoda },
+
+  // Blended - Non Coffee Based
+  { id: 31, name: "Chocolate Chips Blended", category: "Blended", price: 150, icon: CupSoda },
+  { id: 32, name: "Nutella Oreo", category: "Blended", price: 160, icon: CupSoda },
+  { id: 33, name: "Strawberry Cheesecake", category: "Blended", price: 150, icon: CupSoda },
+  { id: 34, name: "Strawberry Oreo", category: "Blended", price: 150, icon: CupSoda },
+  { id: 35, name: "Matcha Cream Blended", category: "Blended", price: 160, icon: CupSoda },
+  { id: 36, name: "Lotus Biscoff Creamcheese", category: "Blended", price: 190, icon: CupSoda },
+  { id: 37, name: "Cookie n Cream Cheesecake", category: "Blended", price: 180, icon: CupSoda },
+  { id: 38, name: "Caramel Cream Blended", category: "Blended", price: 140, icon: CupSoda },
+  { id: 39, name: "Salted Caramel Cream", category: "Blended", price: 140, icon: CupSoda },
+
+  // Pasta
+  { id: 40, name: "Pesto Pasta", category: "Pasta", price: 160, icon: Utensils },
+  { id: 41, name: "Creamy Bacon Mushroom", category: "Pasta", price: 160, icon: Utensils },
+  { id: 42, name: "Spicy Spaghetti", category: "Pasta", price: 160, icon: Utensils },
+  { id: 43, name: "Spanish Sardines", category: "Pasta", price: 160, icon: Utensils },
+
+  // Chicken Wings
+  { id: 44, name: "3pcs Chicken Wings w/ Rice", category: "Chicken Wings", price: 150, icon: Drumstick },
+  { id: 45, name: "6pcs Chicken Wings (2 flavors)", category: "Chicken Wings", price: 250, icon: Drumstick },
+  { id: 46, name: "9pcs Chicken Wings (3 flavors)", category: "Chicken Wings", price: 350, icon: Drumstick },
+
+  // Burger
+  { id: 47, name: "Burger With Fries", category: "Burger", price: 100, icon: Sandwich },
+  { id: 48, name: "Cheese Burger With Fries", category: "Burger", price: 120, icon: Sandwich },
+  { id: 49, name: "Egg Burger With Fries", category: "Burger", price: 120, icon: Sandwich },
+  { id: 50, name: "Overload With Fries", category: "Burger", price: 150, icon: Sandwich },
+
+  // Nachos
+  { id: 51, name: "Cheesy Beef Nachos", category: "Nachos", price: 150, icon: Flame },
+  { id: 52, name: "Cheesy Beef Fries", category: "Nachos", price: 150, icon: Flame },
+
+  // Waffle
+  { id: 53, name: "Plain Waffle", category: "Waffle", price: 110, icon: Cake },
+  { id: 54, name: "Chocolate Waffle", category: "Waffle", price: 130, icon: Cake },
+  { id: 55, name: "Strawberry Waffle", category: "Waffle", price: 130, icon: Cake },
+  { id: 56, name: "Caramel Waffle", category: "Waffle", price: 130, icon: Cake },
+  { id: 57, name: "Biscoff Waffle", category: "Waffle", price: 150, icon: Cake },
+
+  // Iced Coffee
+  { id: 58, name: "Cafe Latte (Iced)", category: "Iced Coffee", price: 49, icon: CupSoda },
+  { id: 59, name: "Cafe Mocha", category: "Iced Coffee", price: 49, icon: CupSoda },
+  { id: 60, name: "Caramel Latte", category: "Iced Coffee", price: 49, icon: CupSoda },
+  { id: 61, name: "Vanilla Latte", category: "Iced Coffee", price: 49, icon: CupSoda },
+  { id: 62, name: "Spanish Latte (Iced)", category: "Iced Coffee", price: 49, icon: CupSoda },
+
+  // Milk Tea
+  { id: 63, name: "Chocolate Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+  { id: 64, name: "Wintermelon Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+  { id: 65, name: "Taro Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+  { id: 66, name: "Matcha Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+  { id: 67, name: "Red Velvet Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+  { id: 68, name: "Cheesecake Milk Tea", category: "Milk Tea", price: 49, icon: CupSoda },
+
+  // Fruit Tea
+  { id: 69, name: "Strawberry Fruit Tea", category: "Fruit Tea", price: 49, icon: GlassWater },
+  { id: 70, name: "Lychee Fruit Tea", category: "Fruit Tea", price: 49, icon: GlassWater },
+  { id: 71, name: "Lemon Fruit Tea", category: "Fruit Tea", price: 49, icon: GlassWater },
+  { id: 72, name: "Kiwi Fruit Tea", category: "Fruit Tea", price: 49, icon: GlassWater },
+  { id: 73, name: "Blueberry Fruit Tea", category: "Fruit Tea", price: 49, icon: GlassWater },
+
+  // Frappe
+  { id: 74, name: "Java Chips Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 75, name: "Mocha Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 76, name: "Caramel Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 77, name: "Vanilla Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 78, name: "Matcha Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 79, name: "Strawberry Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 80, name: "Cookies & Cream Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 81, name: "Red Velvet Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 82, name: "Taro Frappe", category: "Frappe", price: 69, icon: CupSoda },
+  { id: 83, name: "Cheesecake Frappe", category: "Frappe", price: 69, icon: CupSoda },
 ];
 
-const CATEGORIES = ["All Items", "Coffee", "Cold Brew", "Pastries", "Sandwiches", "Seasonal"];
+const CATEGORIES = [
+  "All Items",
+  "Espresso",
+  "Non-Coffee",
+  "Refreshers",
+  "Blended",
+  "Iced Coffee",
+  "Milk Tea",
+  "Fruit Tea",
+  "Frappe",
+  "Pasta",
+  "Chicken Wings",
+  "Burger",
+  "Nachos",
+  "Waffle",
+];
 const ORDER_TYPES = ["Pickup", "Delivery", "Dine In"];
 const PAYMENT_METHODS = [
   { id: "cash", label: "Cash", icon: Banknote },
@@ -56,7 +174,134 @@ function money(n) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function StaffLoginScreen({ onLogin }) {
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const match = STAFF_ACCOUNTS.find(
+      (s) => s.name.toLowerCase() === name.trim().toLowerCase() && s.password === password
+    );
+    if (match) {
+      setError("");
+      onLogin(match.name);
+    } else {
+      setError("Maling username o password.");
+    }
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap');`}</style>
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center mb-6">
+          <img src={logo} alt="Cafe Brewm" className="h-20 w-20 rounded-full object-cover shadow-sm mb-3" />
+          <h1 className="text-xl font-bold text-neutral-900" style={{ fontFamily: "'Fraunces', serif" }}>Cafe Brewm POS</h1>
+          <p className="text-sm text-neutral-500 mt-1">Staff login</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="rounded-sm border border-neutral-200 bg-white shadow-sm p-6 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Username</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ilagay ang username mo"
+              autoFocus
+              className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••"
+              className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+            />
+          </div>
+
+          {error && <p className="text-sm text-neutral-700">{error}</p>}
+
+          <button
+            type="submit"
+            className="w-full rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+          >
+            Log in
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function PosApp() {
+  const [authPhase, setAuthPhase] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null");
+      return saved?.staffName ? "pos" : "login";
+    } catch {
+      return "login";
+    }
+  });
+  const [currentStaff, setCurrentStaff] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null")?.staffName || null;
+    } catch {
+      return null;
+    }
+  });
+  const [clockInInfo, setClockInInfo] = useState(null);
+  const [clockBarActive, setClockBarActive] = useState(false);
+
+  async function handleStaffLogin(staffName) {
+    setAuthPhase("loading");
+    setClockBarActive(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setClockBarActive(true)));
+
+    const [info] = await Promise.all([
+      fetch(CLOCKIN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffName }),
+      })
+        .then((r) => r.json())
+        .catch(() => null),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+
+    const now = new Date();
+    const fallback = {
+      day: now.toLocaleDateString("en-US", { weekday: "long" }),
+      date: now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    setCurrentStaff(staffName);
+    setClockInInfo(info?.success ? info : fallback);
+    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName }));
+    setAuthPhase("timein");
+
+    setTimeout(() => setAuthPhase("pos"), 2600);
+  }
+
+  async function handleLogout() {
+    if (currentStaff) {
+      fetch(CLOCKOUT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffName: currentStaff }),
+      }).catch(() => {});
+    }
+    sessionStorage.removeItem(SHIFT_KEY);
+    setCurrentStaff(null);
+    setClockInInfo(null);
+    setAuthPhase("login");
+  }
+
   const [activeCategory, setActiveCategory] = useState("All Items");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState([]);
@@ -171,6 +416,7 @@ export default function PosApp() {
       paymentMethod,
       orderType,
       note,
+      staffName: currentStaff,
     };
 
     setOrderStatus("loading");
@@ -200,6 +446,46 @@ export default function PosApp() {
     month: "short",
     year: "numeric",
   });
+
+  if (authPhase === "login") {
+    return <StaffLoginScreen onLogin={handleStaffLogin} />;
+  }
+
+  if (authPhase === "loading" || authPhase === "timein") {
+    return (
+      <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap');
+          .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+          @keyframes bounceCoffee { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+          @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+        `}</style>
+        <div className="w-[300px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
+          {authPhase === "loading" ? (
+            <>
+              <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>☕</div>
+              <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Nag-clock in…</p>
+              <p className="text-xs text-neutral-500 mb-4">Sinasave ang time in mo</p>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+                <div
+                  className="h-full bg-neutral-900 transition-[width] ease-linear"
+                  style={{ width: clockBarActive ? "100%" : "0%", transitionDuration: "5000ms" }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>☕</div>
+              <p className="font-medium text-lg mb-3" style={{ fontFamily: "'Fraunces', serif" }}>Time In</p>
+              <p className="text-2xl font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
+              <p className="text-sm text-neutral-500 mt-1">{clockInInfo?.day}, {clockInInfo?.date}</p>
+              <p className="text-xs text-neutral-400 mt-4">Kumusta ang shift mo, {currentStaff}!</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-white text-neutral-900 flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -296,9 +582,19 @@ export default function PosApp() {
                 </div>
               )}
             </div>
-            <button className="h-9 w-9 rounded-sm border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-900">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+              <div className="h-8 w-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                {currentStaff?.[0]?.toUpperCase()}
+              </div>
+              <span className="hidden sm:inline text-sm font-medium text-neutral-700">{currentStaff}</span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-2.5 py-2 transition-colors"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Log out</span>
+              </button>
+            </div>
           </div>
         </div>
 

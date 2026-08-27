@@ -1,0 +1,125 @@
+{
+  "name": "POS Inventory",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Sa dalawang MySQL node dito, piliin sa Credential dropdown ang EXISTING na \"MySQL account\" credential mo (ginawa mo na dati sa POS Ledger workflow) — parehong database (cafe_brewm).\n2. Activate.\n3. I-copy ang Webhook URL mula sa \"Inventory Webhook\" node, ilagay sa `INVENTORY_API_URL` sa src/LedgerDashboard.jsx.",
+        "height": 200,
+        "width": 340
+      },
+      "id": "note-node",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-400, -80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "pos-inventory",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "webhook-get",
+      "name": "Get Inventory Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-400, 160],
+      "webhookId": "pos-inventory-get"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT name, category, quantity, unit, low_stock_threshold, updated_at FROM inventory ORDER BY name ASC",
+        "options": {}
+      },
+      "id": "mysql-select",
+      "name": "Select Inventory (MySQL)",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-176, 160],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst items = rows.map(r => ({\n  name: r.name,\n  category: r.category,\n  quantity: Number(r.quantity) || 0,\n  unit: r.unit,\n  lowStockThreshold: Number(r.low_stock_threshold) || 0,\n  updatedAt: r.updated_at\n}));\nreturn [{ json: { success: true, count: items.length, items } }];"
+      },
+      "id": "shape-get",
+      "name": "Shape Inventory Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [48, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-get",
+      "name": "Respond with Inventory",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [272, 160]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pos-inventory",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "webhook-post",
+      "name": "Add Stock Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-400, 400],
+      "webhookId": "pos-inventory-post"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nreturn [{\n  json: {\n    Name: (body.name || '').trim(),\n    Category: body.category || 'Uncategorized',\n    QuantityDelta: Number(body.quantityDelta) || 0,\n    Unit: body.unit || 'pcs',\n    LowStockThreshold: Number(body.lowStockThreshold) || 0\n  }\n}];"
+      },
+      "id": "format-item",
+      "name": "Format Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-176, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO inventory (name, category, quantity, unit, low_stock_threshold) VALUES ('{{$json.Name.replace(/'/g, \"''\")}}', '{{$json.Category.replace(/'/g, \"''\")}}', {{$json.QuantityDelta}}, '{{$json.Unit}}', {{$json.LowStockThreshold}}) ON DUPLICATE KEY UPDATE quantity = quantity + {{$json.QuantityDelta}}, category = '{{$json.Category.replace(/'/g, \"''\")}}', unit = '{{$json.Unit}}', low_stock_threshold = {{$json.LowStockThreshold}}",
+        "options": {}
+      },
+      "id": "mysql-upsert-item",
+      "name": "Upsert Item (MySQL)",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [48, 400],
+      "credentials": { "mySql": { "id": "REPLACE_WITH_YOUR_MYSQL_CREDENTIAL_ID", "name": "MySQL account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Na-save ang \" + $('Format Item').item.json.Name } }}",
+        "options": {}
+      },
+      "id": "respond-post",
+      "name": "Respond to Staff",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [272, 400]
+    }
+  ],
+  "connections": {
+    "Get Inventory Webhook": { "main": [[{ "node": "Select Inventory (MySQL)", "type": "main", "index": 0 }]] },
+    "Select Inventory (MySQL)": { "main": [[{ "node": "Shape Inventory Response", "type": "main", "index": 0 }]] },
+    "Shape Inventory Response": { "main": [[{ "node": "Respond with Inventory", "type": "main", "index": 0 }]] },
+    "Add Stock Webhook": { "main": [[{ "node": "Format Item", "type": "main", "index": 0 }]] },
+    "Format Item": { "main": [[{ "node": "Upsert Item (MySQL)", "type": "main", "index": 0 }]] },
+    "Upsert Item (MySQL)": { "main": [[{ "node": "Respond to Staff", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

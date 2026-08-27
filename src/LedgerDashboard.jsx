@@ -11,10 +11,18 @@ import {
   TrendingDown,
   Wallet,
   Package,
+  LogOut,
+  Plus,
+  X,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
+const INVENTORY_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-inventory";
+
 const LEDGER_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-ledger-data";
+const ADMIN_USERNAME = "admincaffe";
+const ADMIN_PASSWORD = "caffeprox12";
+const AUTH_KEY = "cafe-brewm-ledger-auth";
 
 const DONUT_COLORS = ["#C9A24B", "#7A2E2E", "#3B82F6", "#8A9A82", "#F59E0B", "#94A3B8"];
 
@@ -53,7 +61,284 @@ const COLUMNS = [
   { key: "total", label: "Total" },
 ];
 
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setError("");
+      onLogin();
+    } else {
+      setError("Maling username o password.");
+    }
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-[#F7F8FA] flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      `}</style>
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center mb-6">
+          <img src={logo} alt="Cafe Brewm" className="h-20 w-20 rounded-full object-cover shadow-sm mb-3" />
+          <h1 className="text-xl font-bold text-slate-900">Cafe Brewm Ledger</h1>
+          <p className="text-sm text-slate-500 mt-1">Admin access only</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1.5 block">Username</label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admincaffe"
+              autoFocus
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 mb-1.5 block">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••"
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {error && <p className="text-sm text-rose-600">{error}</p>}
+
+          <button
+            type="submit"
+            className="w-full rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 transition-colors"
+          >
+            Log in
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-slate-400 mt-5">© {new Date().getFullYear()} Cafe Brewm. Internal use only.</p>
+      </div>
+    </div>
+  );
+}
+
+function InventoryTab() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", category: "", quantity: "", unit: "pcs", lowStockThreshold: "5" });
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(INVENTORY_API_URL);
+      const data = await res.json();
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      setError("Hindi ma-load ang inventory. Check kung Active ang n8n workflow.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.name.trim() || !form.quantity) return;
+    setSaving(true);
+    try {
+      await fetch(INVENTORY_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          category: form.category.trim() || "Uncategorized",
+          quantityDelta: Number(form.quantity),
+          unit: form.unit,
+          lowStockThreshold: Number(form.lowStockThreshold) || 0,
+        }),
+      });
+      setForm({ name: "", category: "", quantity: "", unit: "pcs", lowStockThreshold: "5" });
+      setModalOpen(false);
+      await load();
+    } catch (err) {
+      setError("Hindi na-save ang item. Subukan ulit.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-500">
+          {items.length} item{items.length !== 1 ? "s" : ""} sa stock
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add / Restock Item
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left px-4 py-2.5 font-medium text-slate-500">Item</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Category</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Quantity</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Unit</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Status</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Last updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-slate-400">Loading inventory…</td>
+                </tr>
+              )}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-rose-500">{error}</td>
+                </tr>
+              )}
+              {!loading && !error && items.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-slate-400">
+                    Walang stock items pa. I-click ang "Add / Restock Item" para magdagdag.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                !error &&
+                items.map((it) => {
+                  const low = Number(it.quantity) <= Number(it.lowStockThreshold);
+                  return (
+                    <tr key={it.name} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-4 py-2.5 font-medium text-slate-800">{it.name}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{it.category}</td>
+                      <td className="px-3 py-2.5 font-mono-num text-slate-900">{it.quantity}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{it.unit}</td>
+                      <td className="px-3 py-2.5">
+                        {low ? (
+                          <span className="inline-flex items-center rounded-full bg-rose-50 text-rose-600 text-xs font-medium px-2 py-0.5">
+                            Low stock
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium px-2 py-0.5">
+                            OK
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-400 whitespace-nowrap">{it.updatedAt}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-slate-900">Add / Restock Item</h3>
+              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Item name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="hal. Coffee Beans"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Category</label>
+                <input
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  placeholder="hal. Raw Materials"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Quantity to add</label>
+                  <input
+                    type="number"
+                    value={form.quantity}
+                    onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+                    placeholder="hal. 10"
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Unit</label>
+                  <input
+                    value={form.unit}
+                    onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                    placeholder="pcs / kg / L"
+                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Low stock alert kapag baba sa:</label>
+                <input
+                  type="number"
+                  value={form.lowStockThreshold}
+                  onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium py-2.5 transition-colors mt-2"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LedgerDashboard() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === "true");
+  const [activeTab, setActiveTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -195,6 +480,22 @@ export default function LedgerDashboard() {
     URL.revokeObjectURL(url);
   }
 
+  if (!authed) {
+    return (
+      <LoginScreen
+        onLogin={() => {
+          sessionStorage.setItem(AUTH_KEY, "true");
+          setAuthed(true);
+        }}
+      />
+    );
+  }
+
+  function logout() {
+    sessionStorage.removeItem(AUTH_KEY);
+    setAuthed(false);
+  }
+
   return (
     <div className="min-h-screen w-full bg-[#F7F8FA] text-slate-900" style={{ fontFamily: "'Inter', sans-serif" }}>
       <style>{`
@@ -225,9 +526,39 @@ export default function LedgerDashboard() {
               <Download className="h-4 w-4" />
               Export CSV
             </button>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-500 px-3 py-2 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-5 border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "orders" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Orders
+          </button>
+          <button
+            onClick={() => setActiveTab("inventory")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "inventory" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Inventory
+          </button>
+        </div>
+
+        {activeTab === "inventory" ? (
+          <InventoryTab />
+        ) : (
+        <>
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
           <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -434,6 +765,8 @@ export default function LedgerDashboard() {
             </table>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

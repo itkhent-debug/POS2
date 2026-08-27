@@ -57,7 +57,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst now = $now.setZone('Asia/Manila');\nconst items = Array.isArray(body.items) ? body.items : [];\nconst itemsSummary = items.map(i => `${i.name} x${i.qty}`).join(', ');\n\nreturn [{\n  json: {\n    OrderNumber: body.orderNumber,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Customer: body.customerName || 'Guest',\n    Items: itemsSummary,\n    Subtotal: body.subtotal,\n    Discount: body.discountAmount,\n    Tax: body.tax,\n    Total: body.total,\n    Cost: body.cost || 0,\n    Profit: body.profit || 0,\n    PaymentMethod: body.paymentMethod,\n    OrderType: body.orderType,\n    Note: body.note || ''\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst now = $now.setZone('Asia/Manila');\nconst items = Array.isArray(body.items) ? body.items : [];\nconst itemsSummary = items.map(i => `${i.name} x${i.qty}`).join(', ');\n\nreturn [{\n  json: {\n    OrderNumber: body.orderNumber,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Customer: body.customerName || 'Guest',\n    Items: itemsSummary,\n    Subtotal: body.subtotal,\n    Discount: body.discountAmount,\n    Tax: body.tax,\n    Total: body.total,\n    Cost: body.cost || 0,\n    Profit: body.profit || 0,\n    PaymentMethod: body.paymentMethod,\n    OrderType: body.orderType,\n    Note: body.note || '',\n    Staff: body.staffName || 'Unknown'\n  }\n}];"
       },
       "id": "format-order",
       "name": "Format Order",
@@ -100,7 +100,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note) VALUES ({{$json.OrderNumber}}, '{{$json.Day}}', '{{$json.Date}}', '{{$json.Time}}', '{{$json.Customer.replace(/'/g, \"''\")}}', '{{$json.Items.replace(/'/g, \"''\")}}', {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, '{{$json.PaymentMethod}}', '{{$json.OrderType}}', '{{ ($json.Note || \"\").replace(/'/g, \"''\") }}')",
+        "query": "=INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, '{{$json.Day}}', '{{$json.Date}}', '{{$json.Time}}', '{{$json.Customer.replace(/'/g, \"''\")}}', '{{$json.Items.replace(/'/g, \"''\")}}', {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, '{{$json.PaymentMethod}}', '{{$json.OrderType}}', '{{ ($json.Note || \"\").replace(/'/g, \"''\") }}', '{{$json.Staff.replace(/'/g, \"''\")}}')",
         "options": {}
       },
       "id": "mysql-insert-order",
@@ -154,7 +154,7 @@
         "authentication": "oAuth2",
         "select": "channel",
         "channelId": { "__rl": true, "value": "https://app.slack.com/client/T0B7P2R48FN/C0B7P2RA0UU", "mode": "url" },
-        "text": "=✅ *Order #{{$('Format Order').item.json.OrderNumber}} done!*\n💰 ₱{{$('Format Order').item.json.Total}}\n👤 {{$('Format Order').item.json.Customer}}\n📅 {{$('Format Order').item.json.Day}}, {{$('Format Order').item.json.Date}} at {{$('Format Order').item.json.Time}}",
+        "text": "=✅ *Order #{{$('Format Order').item.json.OrderNumber}} done!*\n💰 ₱{{$('Format Order').item.json.Total}}\n👤 {{$('Format Order').item.json.Customer}}\n🧑‍💼 Staff: {{$('Format Order').item.json.Staff}}\n📅 {{$('Format Order').item.json.Day}}, {{$('Format Order').item.json.Date}} at {{$('Format Order').item.json.Time}}",
         "otherOptions": {}
       },
       "id": "notify-slack",
@@ -220,7 +220,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.all().map(item => item.json);\n\nconst orders = rows.map(r => ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  month: (r.Date || '').slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
+        "jsCode": "const rows = $input.all().map(item => item.json);\n\nconst orders = rows.map(r => ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  staff: r.Staff,\n  month: (r.Date || '').slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
       },
       "id": "shape-response",
       "name": "Shape Response",
