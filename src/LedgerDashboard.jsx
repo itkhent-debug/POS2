@@ -54,6 +54,7 @@ function parseItems(itemsStr) {
 const COLUMNS = [
   { key: "orderNumber", label: "Order #" },
   { key: "customer", label: "Customer" },
+  { key: "staff", label: "Staff" },
   { key: "items", label: "Items" },
   { key: "paymentMethod", label: "Payment" },
   { key: "orderType", label: "Order type" },
@@ -528,6 +529,8 @@ export default function LedgerDashboard() {
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("All");
+  const [selectedStaff, setSelectedStaff] = useState("All");
+  const [selectedDay, setSelectedDay] = useState("All");
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [selected, setSelected] = useState(new Set());
@@ -555,9 +558,21 @@ export default function LedgerDashboard() {
     return Array.from(set).sort().reverse();
   }, [orders]);
 
+  const staffNames = useMemo(() => {
+    const set = new Set(orders.map((o) => o.staff).filter(Boolean));
+    return Array.from(set).sort();
+  }, [orders]);
+
+  const days = useMemo(() => {
+    const set = new Set(orders.map((o) => o.date).filter(Boolean));
+    return Array.from(set).sort().reverse();
+  }, [orders]);
+
   const filtered = useMemo(() => {
     let list = orders;
     if (selectedMonth !== "All") list = list.filter((o) => o.month === selectedMonth);
+    if (selectedStaff !== "All") list = list.filter((o) => o.staff === selectedStaff);
+    if (selectedDay !== "All") list = list.filter((o) => o.date === selectedDay);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -576,7 +591,7 @@ export default function LedgerDashboard() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [orders, selectedMonth, query, sortKey, sortDir]);
+  }, [orders, selectedMonth, selectedStaff, selectedDay, query, sortKey, sortDir]);
 
   const summary = useMemo(() => {
     const revenue = filtered.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
@@ -631,13 +646,14 @@ export default function LedgerDashboard() {
 
   function exportCsv() {
     const rows = filtered;
-    const header = ["Order #", "Customer", "Items", "Payment", "Order Type", "Day", "Date", "Time", "Subtotal", "Discount", "Tax", "Total"];
+    const header = ["Order #", "Customer", "Staff", "Items", "Payment", "Order Type", "Day", "Date", "Time", "Subtotal", "Discount", "Tax", "Total"];
     const lines = [header.join(",")];
     for (const o of rows) {
       lines.push(
         [
           o.orderNumber,
           `"${(o.customer || "").replace(/"/g, '""')}"`,
+          `"${(o.staff || "").replace(/"/g, '""')}"`,
           `"${(o.items || "").replace(/"/g, '""')}"`,
           o.paymentMethod,
           o.orderType,
@@ -876,6 +892,36 @@ export default function LedgerDashboard() {
             </select>
           </div>
 
+          <div className="relative">
+            <select
+              value={selectedStaff}
+              onChange={(e) => setSelectedStaff(e.target.value)}
+              className="appearance-none rounded-md border border-slate-200 bg-white text-sm pl-3 pr-8 py-2 outline-none focus:border-blue-500"
+            >
+              <option value="All">All staff</option>
+              {staffNames.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative">
+            <select
+              value={selectedDay}
+              onChange={(e) => setSelectedDay(e.target.value)}
+              className="appearance-none rounded-md border border-slate-200 bg-white text-sm pl-3 pr-8 py-2 outline-none focus:border-blue-500"
+            >
+              <option value="All">All days</option>
+              {days.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="relative ml-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -945,6 +991,7 @@ export default function LedgerDashboard() {
                       </td>
                       <td className="px-3 py-2.5 font-mono-num text-blue-600">#{o.orderNumber}</td>
                       <td className="px-3 py-2.5 font-medium text-slate-800">{o.customer}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{o.staff || "—"}</td>
                       <td className="px-3 py-2.5 text-slate-500 max-w-[240px] truncate">{o.items}</td>
                       <td className="px-3 py-2.5 text-slate-500 capitalize">{o.paymentMethod}</td>
                       <td className="px-3 py-2.5 text-slate-500">{o.orderType}</td>
