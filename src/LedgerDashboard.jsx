@@ -12,6 +12,7 @@ import {
   Wallet,
   Package,
 } from "lucide-react";
+import logo from "./assets/logo.jpg";
 
 const LEDGER_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-ledger-data";
 
@@ -204,8 +205,9 @@ export default function LedgerDashboard() {
       <div className="max-w-[1400px] mx-auto px-6 py-6">
         {/* Title row */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-2xl font-bold text-slate-900">Ledger</h1>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Cafe Brewm" className="h-9 w-9 rounded-full object-cover" />
+            <h1 className="text-2xl font-bold text-slate-900">Cafe Brewm Ledger</h1>
             <span className="text-sm font-medium text-blue-600">{summary.count} Orders</span>
           </div>
           <div className="flex items-center gap-2">

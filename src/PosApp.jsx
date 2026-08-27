@@ -20,6 +20,7 @@ import {
   Cake,
   Check,
 } from "lucide-react";
+import logo from "./assets/logo.jpg";
 
 const PRODUCTS = [
   { id: 1, name: "Espresso", category: "Coffee", price: 3.5, icon: Coffee },
@@ -216,10 +217,8 @@ export default function PosApp() {
       <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/90 backdrop-blur">
         <div className="flex items-center gap-4 px-5 py-3">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-sm bg-neutral-900 flex items-center justify-center">
-              <span className="font-display font-bold text-white text-sm">L</span>
-            </div>
-            <span className="font-display font-semibold text-lg tracking-tight">Ledger</span>
+            <img src={logo} alt="Cafe Brewm" className="h-9 w-9 rounded-full object-cover" />
+            <span className="font-display font-semibold text-lg tracking-tight">Cafe Brewm</span>
           </div>
 
           <div className="flex-1 max-w-md relative hidden sm:block">
