@@ -29,7 +29,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst now = $now.setZone('Asia/Manila');\nreturn [{\n  json: {\n    StaffName: body.staffName,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Ts: now.toFormat('yyyy-MM-dd HH:mm:ss')\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst now = $now.setZone('Asia/Manila');\nreturn [{\n  json: {\n    StaffName: body.staffName,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Ts: now.toUTC().toFormat('yyyy-MM-dd HH:mm:ss')\n  }\n}];"
       },
       "id": "format-clockin",
       "name": "Format Clock In",
@@ -78,7 +78,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst now = $now.setZone('Asia/Manila');\nreturn [{\n  json: {\n    StaffName: body.staffName,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Ts: now.toFormat('yyyy-MM-dd HH:mm:ss')\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst now = $now.setZone('Asia/Manila');\nreturn [{\n  json: {\n    StaffName: body.staffName,\n    Day: now.toFormat('cccc'),\n    Date: now.toFormat('yyyy-MM-dd'),\n    Time: now.toFormat('hh:mm a'),\n    Ts: now.toUTC().toFormat('yyyy-MM-dd HH:mm:ss')\n  }\n}];"
       },
       "id": "format-clockout",
       "name": "Format Clock Out",

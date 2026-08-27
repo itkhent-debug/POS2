@@ -297,16 +297,22 @@ export default function PosApp() {
   }
 
   async function handleLogout() {
-    let outInfo = null;
-    if (currentStaff) {
-      outInfo = await fetch(CLOCKOUT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffName: currentStaff }),
-      })
-        .then((r) => r.json())
-        .catch(() => null);
-    }
+    setAuthPhase("loggingout");
+    setClockBarActive(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setClockBarActive(true)));
+
+    const [outInfo] = await Promise.all([
+      currentStaff
+        ? fetch(CLOCKOUT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ staffName: currentStaff }),
+          })
+            .then((r) => r.json())
+            .catch(() => null)
+        : Promise.resolve(null),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
 
     const now = new Date();
     const fallbackOut = {
@@ -512,7 +518,7 @@ export default function PosApp() {
     );
   }
 
-  if (authPhase === "loading" || authPhase === "timein") {
+  if (authPhase === "loading" || authPhase === "timein" || authPhase === "loggingout") {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
         <style>{`
@@ -522,11 +528,15 @@ export default function PosApp() {
           @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
         `}</style>
         <div className="w-[300px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
-          {authPhase === "loading" ? (
+          {authPhase === "loading" || authPhase === "loggingout" ? (
             <>
               <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>☕</div>
-              <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Nag-clock in…</p>
-              <p className="text-xs text-neutral-500 mb-4">Sinasave ang time in mo</p>
+              <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>
+                {authPhase === "loading" ? "Nag-clock in…" : "Nag-clock out…"}
+              </p>
+              <p className="text-xs text-neutral-500 mb-4">
+                {authPhase === "loading" ? "Sinasave ang time in mo" : "Sinasave ang time out mo"}
+              </p>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
                 <div
                   className="h-full bg-neutral-900 transition-[width] ease-linear"
