@@ -254,7 +254,14 @@ export default function PosApp() {
       return null;
     }
   });
-  const [clockInInfo, setClockInInfo] = useState(null);
+  const [clockInInfo, setClockInInfo] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null")?.clockInInfo || null;
+    } catch {
+      return null;
+    }
+  });
+  const [clockOutInfo, setClockOutInfo] = useState(null);
   const [clockBarActive, setClockBarActive] = useState(false);
 
   async function handleStaffLogin(staffName) {
@@ -280,25 +287,43 @@ export default function PosApp() {
       time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     };
 
+    const resolvedClockIn = info?.success ? info : fallback;
     setCurrentStaff(staffName);
-    setClockInInfo(info?.success ? info : fallback);
-    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName }));
+    setClockInInfo(resolvedClockIn);
+    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn }));
     setAuthPhase("timein");
 
     setTimeout(() => setAuthPhase("pos"), 2600);
   }
 
   async function handleLogout() {
+    let outInfo = null;
     if (currentStaff) {
-      fetch(CLOCKOUT_URL, {
+      outInfo = await fetch(CLOCKOUT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ staffName: currentStaff }),
-      }).catch(() => {});
+      })
+        .then((r) => r.json())
+        .catch(() => null);
     }
+
+    const now = new Date();
+    const fallbackOut = {
+      day: now.toLocaleDateString("en-US", { weekday: "long" }),
+      date: now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    };
+
     sessionStorage.removeItem(SHIFT_KEY);
+    setClockOutInfo(outInfo?.success ? outInfo : fallbackOut);
+    setAuthPhase("timeout");
+  }
+
+  function finishLogout() {
     setCurrentStaff(null);
     setClockInInfo(null);
+    setClockOutInfo(null);
     setAuthPhase("login");
   }
 
@@ -449,6 +474,42 @@ export default function PosApp() {
 
   if (authPhase === "login") {
     return <StaffLoginScreen onLogin={handleStaffLogin} />;
+  }
+
+  if (authPhase === "timeout") {
+    return (
+      <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap');
+          .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+          @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+        `}</style>
+        <div className="w-[320px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
+          <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>👋</div>
+          <p className="font-medium text-lg mb-4" style={{ fontFamily: "'Fraunces', serif" }}>Shift Summary — {currentStaff}</p>
+
+          <div className="space-y-3 text-left">
+            <div className="rounded-sm border border-neutral-200 px-4 py-2.5">
+              <p className="text-[11px] text-neutral-400 uppercase tracking-wide">Time In</p>
+              <p className="text-lg font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
+              <p className="text-xs text-neutral-500">{clockInInfo?.day}, {clockInInfo?.date}</p>
+            </div>
+            <div className="rounded-sm border border-neutral-200 px-4 py-2.5">
+              <p className="text-[11px] text-neutral-400 uppercase tracking-wide">Time Out</p>
+              <p className="text-lg font-semibold text-neutral-900 font-mono-num">{clockOutInfo?.time}</p>
+              <p className="text-xs text-neutral-500">{clockOutInfo?.day}, {clockOutInfo?.date}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={finishLogout}
+            className="w-full mt-5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+          >
+            Tapos na, Log out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (authPhase === "loading" || authPhase === "timein") {
@@ -709,8 +770,8 @@ export default function PosApp() {
         </main>
 
         {/* Cart */}
-        <aside className="lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-neutral-200 bg-neutral-50 px-5 py-5 flex flex-col">
-          <div className="flex items-baseline justify-between mb-4">
+        <aside className="lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-neutral-200 bg-neutral-50 px-5 py-5 flex flex-col lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-hidden">
+          <div className="flex items-baseline justify-between mb-4 shrink-0">
             <h2 className="font-display font-semibold text-base">Cart</h2>
             <div className="text-right">
               <p className="text-xs font-mono-num text-neutral-900 font-semibold">
@@ -724,10 +785,10 @@ export default function PosApp() {
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Customer name (para sa ledger)"
-            className="w-full mb-4 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+            className="w-full mb-4 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900 shrink-0"
           />
 
-          <div className="flex-1 space-y-3 mb-4 max-h-[360px] lg:max-h-none overflow-y-auto no-scrollbar">
+          <div className="flex-1 min-h-0 space-y-3 mb-4 max-h-[360px] lg:max-h-none overflow-y-auto no-scrollbar">
             {cart.length === 0 && (
               <p className="text-sm text-neutral-400 py-8 text-center">Cart is empty. Tap a product to add it.</p>
             )}
@@ -762,7 +823,7 @@ export default function PosApp() {
             ))}
           </div>
 
-          <div className="border-t border-dashed border-neutral-200 pt-3 space-y-1.5">
+          <div className="border-t border-dashed border-neutral-200 pt-3 space-y-1.5 shrink-0">
             <div className="flex justify-between text-sm text-neutral-500">
               <span>Subtotal</span>
               <span className="font-mono-num">₱{money(subtotal)}</span>
@@ -781,7 +842,7 @@ export default function PosApp() {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 shrink-0">
             <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Payment method</span>
             <div className="grid grid-cols-3 gap-2">
               {PAYMENT_METHODS.map((m) => {
@@ -808,7 +869,7 @@ export default function PosApp() {
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || orderStatus !== "idle"}
-            className="mt-4 w-full rounded-sm bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white font-medium text-sm uppercase tracking-wide py-3 transition-colors flex items-center justify-center gap-2"
+            className="mt-4 w-full rounded-sm bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white font-medium text-sm uppercase tracking-wide py-3 transition-colors flex items-center justify-center gap-2 shrink-0"
           >
             {orderStatus === "loading" ? (
               <>

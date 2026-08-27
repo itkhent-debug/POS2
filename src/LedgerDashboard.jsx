@@ -18,6 +18,7 @@ import {
 import logo from "./assets/logo.jpg";
 
 const INVENTORY_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-inventory";
+const SHIFTS_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-shifts";
 
 const LEDGER_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-ledger-data";
 const ADMIN_USERNAME = "admincaffe";
@@ -336,6 +337,189 @@ function InventoryTab() {
   );
 }
 
+function StaffTab() {
+  const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(SHIFTS_API_URL);
+      const data = await res.json();
+      setShifts(Array.isArray(data.shifts) ? data.shifts : []);
+    } catch (err) {
+      setError("Hindi ma-load ang staff records. Check kung Active ang n8n workflow.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function downloadPdf(shift) {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Cafe Brewm - Shift Report", 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString("en-US")}`, 14, 24);
+
+    autoTable(doc, {
+      startY: 32,
+      head: [["Field", "Value"]],
+      body: [
+        ["Staff", shift.staffName],
+        ["Time In", `${shift.dayIn}, ${shift.dateIn} at ${shift.timeIn}`],
+        ["Time Out", shift.timeOut ? `${shift.dayOut}, ${shift.dateOut} at ${shift.timeOut}` : "Still on duty"],
+        ["Status", shift.status],
+        ["Orders handled", shift.orderCount],
+        ["Total sales", `P${peso(shift.totalSales)}`],
+        ["Total profit", `P${peso(shift.totalProfit)}`],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [30, 41, 59] },
+    });
+
+    doc.save(`shift-${shift.staffName}-${shift.dateIn}.pdf`);
+  }
+
+  async function downloadAllPdf() {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Cafe Brewm - Staff Shift Log", 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString("en-US")}`, 14, 24);
+
+    autoTable(doc, {
+      startY: 32,
+      head: [["Staff", "Time In", "Time Out", "Status", "Orders", "Sales", "Profit"]],
+      body: shifts.map((s) => [
+        s.staffName,
+        `${s.dayIn}, ${s.dateIn} ${s.timeIn}`,
+        s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "Active",
+        s.status,
+        s.orderCount,
+        `P${peso(s.totalSales)}`,
+        `P${peso(s.totalProfit)}`,
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [30, 41, 59] },
+      styles: { fontSize: 8 },
+    });
+
+    doc.save(`staff-shift-log-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-500">
+          {shifts.length} shift{shifts.length !== 1 ? "s" : ""} naka-record
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={downloadAllPdf}
+            disabled={shifts.length === 0}
+            className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Download as PDF
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="text-left px-4 py-2.5 font-medium text-slate-500">Staff</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time In</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time Out</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Status</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Orders</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Sales</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Profit</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-slate-400">Loading staff records…</td>
+                </tr>
+              )}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-rose-500">{error}</td>
+                </tr>
+              )}
+              {!loading && !error && shifts.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center py-10 text-slate-400">
+                    Walang shift records pa. Mag-log in ang staff sa POS para magsimula ang tracking.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                !error &&
+                shifts.map((s) => (
+                  <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-2.5 font-medium text-slate-800">{s.staffName}</td>
+                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{s.dayIn}, {s.dateIn} {s.timeIn}</td>
+                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">
+                      {s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "—"}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {s.status === "active" ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium px-2 py-0.5">
+                          On duty
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-xs font-medium px-2 py-0.5">
+                          Closed
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono-num text-slate-900">{s.orderCount}</td>
+                    <td className="px-3 py-2.5 font-mono-num text-slate-900">₱{peso(s.totalSales)}</td>
+                    <td className="px-3 py-2.5 font-mono-num text-emerald-600">₱{peso(s.totalProfit)}</td>
+                    <td className="px-3 py-2.5">
+                      <button
+                        onClick={() => downloadPdf(s)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        PDF
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LedgerDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === "true");
   const [activeTab, setActiveTab] = useState("orders");
@@ -553,10 +737,20 @@ export default function LedgerDashboard() {
           >
             Inventory
           </button>
+          <button
+            onClick={() => setActiveTab("staff")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "staff" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Staff
+          </button>
         </div>
 
         {activeTab === "inventory" ? (
           <InventoryTab />
+        ) : activeTab === "staff" ? (
+          <StaffTab />
         ) : (
         <>
         {/* Summary cards */}

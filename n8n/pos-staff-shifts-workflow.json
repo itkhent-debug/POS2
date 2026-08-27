@@ -102,7 +102,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"success\": true, \"staffName\": $('Format Clock Out').item.json.StaffName, \"time\": $('Format Clock Out').item.json.Time } }}",
+        "responseBody": "={{ { \"success\": true, \"staffName\": $('Format Clock Out').item.json.StaffName, \"day\": $('Format Clock Out').item.json.Day, \"date\": $('Format Clock Out').item.json.Date, \"time\": $('Format Clock Out').item.json.Time } }}",
         "options": {}
       },
       "id": "respond-clockout",
