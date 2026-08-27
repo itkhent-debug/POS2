@@ -1,0 +1,284 @@
+{
+  "name": "POS Ledger & CRM",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup checklist\n1. \"Append to Ledger\" + \"Upsert Customer (CRM)\": connect Google account, pick your MAIN Spreadsheet.\n2. Ledger tab headers (Row 1) must be exactly:\nOrderNumber, Day, Date, Time, Customer, Items, Subtotal, Discount, Tax, Total, Cost, Profit, PaymentMethod, OrderType, Note\n3. Customers tab headers: Name, LastVisitDay, LastVisitDate, LastVisitTime, LastOrderTotal, LastPaymentMethod, LastOrderType\n4. \"Append to Ledger (Backup)\": pick a SECOND, separate Spreadsheet (same \"Ledger\" headers as #2) — this is your backup copy.\n5. Slack node: connect workspace + pick channel for order alerts.\n6. Click **Activate** (top right) so the webhook stays live.\n7. Copy the Webhook URL from \"POS Order Webhook\" into `N8N_WEBHOOK_URL` in src/PosApp.jsx.\n8. Also import pos-ledger-data-api-workflow.json — it powers the Ledger Dashboard website (reads from your MAIN Ledger sheet).",
+        "height": 260,
+        "width": 340
+      },
+      "id": "note-node",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [200, 20]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pos-order",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-node",
+      "name": "POS Order Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "pos-order"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ Array.isArray($json.body.items) ? $json.body.items.length : 0 }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            },
+            {
+              "id": "cond2",
+              "leftValue": "={{ $json.body.total }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-node",
+      "name": "Validate Order",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst now = $now.setZone('Asia/Manila');\nconst items = Array.isArray(body.items) ? body.items : [];\nconst itemsSummary = items.map(i => `${i.name} x${i.qty}`).join(', ');\n\nreturn [{\n  json: {\n    orderNumber: body.orderNumber,\n    customerName: body.customerName || 'Guest',\n    date: now.toFormat('yyyy-MM-dd'),\n    day: now.toFormat('cccc'),\n    time: now.toFormat('hh:mm a'),\n    items: itemsSummary,\n    subtotal: body.subtotal,\n    discount: body.discountAmount,\n    tax: body.tax,\n    total: body.total,\n    cost: body.cost || 0,\n    profit: body.profit || 0,\n    paymentMethod: body.paymentMethod,\n    orderType: body.orderType,\n    note: body.note || ''\n  }\n}];"
+      },
+      "id": "format-node",
+      "name": "Format Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 220]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "PASTE_YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ledger",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "OrderNumber": "={{$json.orderNumber}}",
+            "Day": "={{$json.day}}",
+            "Date": "={{$json.date}}",
+            "Time": "={{$json.time}}",
+            "Customer": "={{$json.customerName}}",
+            "Items": "={{$json.items}}",
+            "Subtotal": "={{$json.subtotal}}",
+            "Discount": "={{$json.discount}}",
+            "Tax": "={{$json.tax}}",
+            "Total": "={{$json.total}}",
+            "Cost": "={{$json.cost}}",
+            "Profit": "={{$json.profit}}",
+            "PaymentMethod": "={{$json.paymentMethod}}",
+            "OrderType": "={{$json.orderType}}",
+            "Note": "={{$json.note}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "ledger-node",
+      "name": "Append to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [860, 140],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "PASTE_YOUR_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Customers",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["Name"],
+          "value": {
+            "Name": "={{$json.customerName}}",
+            "LastVisitDay": "={{$json.day}}",
+            "LastVisitDate": "={{$json.date}}",
+            "LastVisitTime": "={{$json.time}}",
+            "LastOrderTotal": "={{$json.total}}",
+            "LastPaymentMethod": "={{$json.paymentMethod}}",
+            "LastOrderType": "={{$json.orderType}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "crm-node",
+      "name": "Upsert Customer (CRM)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1080, 140],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "PASTE_YOUR_BACKUP_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ledger",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "OrderNumber": "={{$json.orderNumber}}",
+            "Day": "={{$json.day}}",
+            "Date": "={{$json.date}}",
+            "Time": "={{$json.time}}",
+            "Customer": "={{$json.customerName}}",
+            "Items": "={{$json.items}}",
+            "Subtotal": "={{$json.subtotal}}",
+            "Discount": "={{$json.discount}}",
+            "Tax": "={{$json.tax}}",
+            "Total": "={{$json.total}}",
+            "Cost": "={{$json.cost}}",
+            "Profit": "={{$json.profit}}",
+            "PaymentMethod": "={{$json.paymentMethod}}",
+            "OrderType": "={{$json.orderType}}",
+            "Note": "={{$json.note}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "backup-node",
+      "name": "Append to Ledger (Backup)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1080, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "PASTE_YOUR_SLACK_CHANNEL_ID_HERE",
+          "mode": "id"
+        },
+        "text": "=✅ *Order #{{$json.orderNumber}} done!*\n💰 ₱{{$json.total}}\n👤 {{$json.customerName}}\n📅 {{$json.day}}, {{$json.date}} at {{$json.time}}",
+        "otherOptions": {}
+      },
+      "id": "slack-node",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1300, 220],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_WITH_YOUR_SLACK_CREDENTIAL_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"☕ Order #\" + $('Format Order').item.json.orderNumber + \" logged! Salamat, \" + $('Format Order').item.json.customerName + \" ✨\" } }}",
+        "options": {}
+      },
+      "id": "respond-node",
+      "name": "Respond to POS",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1520, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "={{ { \"success\": false, \"message\": \"Walang items o zero ang total ng order.\" } }}",
+        "options": {}
+      },
+      "id": "respond-error-node",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 440]
+    }
+  ],
+  "connections": {
+    "POS Order Webhook": {
+      "main": [[{ "node": "Validate Order", "type": "main", "index": 0 }]]
+    },
+    "Validate Order": {
+      "main": [
+        [{ "node": "Format Order", "type": "main", "index": 0 }],
+        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Order": {
+      "main": [[{ "node": "Append to Ledger", "type": "main", "index": 0 }]]
+    },
+    "Append to Ledger": {
+      "main": [[{ "node": "Upsert Customer (CRM)", "type": "main", "index": 0 }]]
+    },
+    "Upsert Customer (CRM)": {
+      "main": [[{ "node": "Append to Ledger (Backup)", "type": "main", "index": 0 }]]
+    },
+    "Append to Ledger (Backup)": {
+      "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]]
+    },
+    "Notify Slack": {
+      "main": [[{ "node": "Respond to POS", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

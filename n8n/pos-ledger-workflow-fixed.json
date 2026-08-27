@@ -1,0 +1,295 @@
+{
+  "name": "POS Ledger & CRM (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Fixed version checklist\n1. \"Append to Ledger\" writes to Document 19GKbPSysyctCGaJPGq7Je6D2E9HncQLFWbXqzbrjdpU, Sheet gid 0. Make sure Row 1 of that tab has EXACTLY these headers:\nOrderNumber, Day, Date, Time, Customer, Items, Subtotal, Discount, Tax, Total, Cost, Profit, PaymentMethod, OrderType, Note\n2. \"Read Ledger\" now points to the SAME document/sheet as #1 (this was the bug — it was pointing at a different, empty spreadsheet).\n3. \"Upsert Customer (CRM)\" writes to Document 1Db4bS17CsNXBEF3WIGElx8SMwos4xOYlVRW-K065LD4. Row 1 headers: Name, LastVisitDay, LastVisitDate, LastVisitTime, LastOrderTotal, LastPaymentMethod, LastOrderType\n4. \"Append to Ledger (Backup)\" writes to Document 1yolSJaTZzn_NA4M6Pleo1Z8Sk6SKFfy6t3vdKN9G_Yo — make sure that spreadsheet's first tab has the SAME headers as #1 before activating.\n5. Click Activate, then test.",
+        "height": 320,
+        "width": 380
+      },
+      "id": "note-node",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-600, -80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pos-order",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "b4492c63-1634-407c-b637-808a18420622",
+      "name": "POS Order Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-368, 272],
+      "webhookId": "pos-order"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ Array.isArray($json.body.items) ? $json.body.items.length : 0 }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            },
+            {
+              "id": "cond2",
+              "leftValue": "={{ $json.body.total }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b686b259-f45b-46a5-8ff2-58abf94aec9a",
+      "name": "Validate Order",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-144, 272]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst now = $now.setZone('Asia/Manila');\nconst items = Array.isArray(body.items) ? body.items : [];\nconst itemsSummary = items.map(i => `${i.name} x${i.qty}`).join(', ');\n\nreturn [{\n  json: {\n    orderNumber: body.orderNumber,\n    customerName: body.customerName || 'Guest',\n    date: now.toFormat('yyyy-MM-dd'),\n    day: now.toFormat('cccc'),\n    time: now.toFormat('hh:mm a'),\n    items: itemsSummary,\n    subtotal: body.subtotal,\n    discount: body.discountAmount,\n    tax: body.tax,\n    total: body.total,\n    cost: body.cost || 0,\n    profit: body.profit || 0,\n    paymentMethod: body.paymentMethod,\n    orderType: body.orderType,\n    note: body.note || ''\n  }\n}];"
+      },
+      "id": "a572b074-7c76-4b84-a918-8ea9879e8a9a",
+      "name": "Format Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 192]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "19GKbPSysyctCGaJPGq7Je6D2E9HncQLFWbXqzbrjdpU", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "OrderNumber": "={{$json.orderNumber}}",
+            "Day": "={{$json.day}}",
+            "Date": "={{$json.date}}",
+            "Time": "={{$json.time}}",
+            "Customer": "={{$json.customerName}}",
+            "Items": "={{$json.items}}",
+            "Subtotal": "={{$json.subtotal}}",
+            "Discount": "={{$json.discount}}",
+            "Tax": "={{$json.tax}}",
+            "Total": "={{$json.total}}",
+            "Cost": "={{$json.cost}}",
+            "Profit": "={{$json.profit}}",
+            "PaymentMethod": "={{$json.paymentMethod}}",
+            "OrderType": "={{$json.orderType}}",
+            "Note": "={{$json.note}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "a3941cb2-8d8c-4bb3-a431-c3d76305cf8c",
+      "name": "Append to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [304, 112],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "1Db4bS17CsNXBEF3WIGElx8SMwos4xOYlVRW-K065LD4", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["Name"],
+          "value": {
+            "Name": "={{$json.customerName}}",
+            "LastVisitDay": "={{$json.day}}",
+            "LastVisitDate": "={{$json.date}}",
+            "LastVisitTime": "={{$json.time}}",
+            "LastOrderTotal": "={{$json.total}}",
+            "LastPaymentMethod": "={{$json.paymentMethod}}",
+            "LastOrderType": "={{$json.orderType}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "5d1bf538-4995-4b31-9733-2cfdeb440e39",
+      "name": "Upsert Customer (CRM)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [512, 112],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1yolSJaTZzn_NA4M6Pleo1Z8Sk6SKFfy6t3vdKN9G_Yo", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "OrderNumber": "={{$json.orderNumber}}",
+            "Day": "={{$json.day}}",
+            "Date": "={{$json.date}}",
+            "Time": "={{$json.time}}",
+            "Customer": "={{$json.customerName}}",
+            "Items": "={{$json.items}}",
+            "Subtotal": "={{$json.subtotal}}",
+            "Discount": "={{$json.discount}}",
+            "Tax": "={{$json.tax}}",
+            "Total": "={{$json.total}}",
+            "Cost": "={{$json.cost}}",
+            "Profit": "={{$json.profit}}",
+            "PaymentMethod": "={{$json.paymentMethod}}",
+            "OrderType": "={{$json.orderType}}",
+            "Note": "={{$json.note}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "backup-node",
+      "name": "Append to Ledger (Backup)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [512, 320],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": { "__rl": true, "value": "https://app.slack.com/client/T0B7P2R48FN/C0B7P2RA0UU", "mode": "url" },
+        "text": "=✅ *Order #{{$json.orderNumber}} done!*\n💰 ₱{{$json.total}}\n👤 {{$json.customerName}}\n📅 {{$json.day}}, {{$json.date}} at {{$json.time}}",
+        "otherOptions": {}
+      },
+      "id": "cf83df27-fad7-4e44-98cf-1cc685d3dabb",
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [736, 216],
+      "credentials": { "slackOAuth2Api": { "id": "aN4zv0vTJLo5bc3w", "name": "Slack account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"☕ Order #\" + $('Format Order').item.json.orderNumber + \" logged! Salamat, \" + $('Format Order').item.json.customerName + \" ✨\" } }}",
+        "options": {}
+      },
+      "id": "4258a7bd-468c-4808-98a3-0a4532b88e0f",
+      "name": "Respond to POS",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 216]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "={{ { \"success\": false, \"message\": \"Walang items o zero ang total ng order.\" } }}",
+        "options": {}
+      },
+      "id": "6b68448c-c580-407c-ab08-d240f71ba749",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [80, 416]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "pos-ledger-data",
+        "responseMode": "responseNode",
+        "options": { "allowedOrigins": "*" }
+      },
+      "id": "7b7171ea-2bd2-499c-8b12-4b1a59974aaf",
+      "name": "Ledger Data Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-368, 672],
+      "webhookId": "pos-ledger-data"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "value": "19GKbPSysyctCGaJPGq7Je6D2E9HncQLFWbXqzbrjdpU", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "0", "mode": "id" },
+        "options": {}
+      },
+      "id": "2c9dc4e3-1e1d-4049-b9eb-6e7fd56b18e5",
+      "name": "Read Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-144, 672],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json);\n\nconst orders = rows.map(r => ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  month: (r.Date || '').slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
+      },
+      "id": "081d3b28-5dcd-4a52-a573-3b9e587a5ba6",
+      "name": "Shape Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 672]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "5963f39c-01be-4635-bb44-105c180ac593",
+      "name": "Respond with Ledger",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [304, 672]
+    }
+  ],
+  "connections": {
+    "POS Order Webhook": {
+      "main": [[{ "node": "Validate Order", "type": "main", "index": 0 }]]
+    },
+    "Validate Order": {
+      "main": [
+        [{ "node": "Format Order", "type": "main", "index": 0 }],
+        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Order": {
+      "main": [[{ "node": "Append to Ledger", "type": "main", "index": 0 }]]
+    },
+    "Append to Ledger": {
+      "main": [[{ "node": "Upsert Customer (CRM)", "type": "main", "index": 0 }]]
+    },
+    "Upsert Customer (CRM)": {
+      "main": [[{ "node": "Append to Ledger (Backup)", "type": "main", "index": 0 }]]
+    },
+    "Append to Ledger (Backup)": {
+      "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]]
+    },
+    "Notify Slack": {
+      "main": [[{ "node": "Respond to POS", "type": "main", "index": 0 }]]
+    },
+    "Ledger Data Webhook": {
+      "main": [[{ "node": "Read Ledger", "type": "main", "index": 0 }]]
+    },
+    "Read Ledger": {
+      "main": [[{ "node": "Shape Response", "type": "main", "index": 0 }]]
+    },
+    "Shape Response": {
+      "main": [[{ "node": "Respond with Ledger", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
