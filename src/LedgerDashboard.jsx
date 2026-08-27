@@ -1093,6 +1093,33 @@ export default function LedgerDashboard() {
           </div>
         </div>
 
+        {(selectedStaff !== "All" || selectedDay !== "All") && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-4 mb-4 flex flex-wrap items-center gap-6">
+            <div>
+              <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-0.5">Computed total</p>
+              <p className="text-sm text-slate-700">
+                {selectedStaff === "All" ? "Lahat ng staff" : selectedStaff}
+                {" · "}
+                {selectedDay === "All" ? "Lahat ng araw" : selectedDay}
+              </p>
+            </div>
+            <div className="flex items-center gap-6 ml-auto">
+              <div>
+                <p className="text-[11px] text-slate-500">Orders</p>
+                <p className="font-mono-num text-lg font-semibold text-slate-900">{summary.count}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-500">Sales</p>
+                <p className="font-mono-num text-lg font-semibold text-slate-900">₱{peso(summary.revenue)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-500">Profit</p>
+                <p className="font-mono-num text-lg font-semibold text-emerald-600">₱{peso(summary.profit)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
           <div className="overflow-x-auto">
