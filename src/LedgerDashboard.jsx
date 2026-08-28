@@ -27,6 +27,15 @@ const LEDGER_API_URL = "https://tech12312.app.n8n.cloud/webhook/pos-ledger-data"
 const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
+const SESSION_LOG_URL = "https://tech12312.app.n8n.cloud/webhook/pos-session-log";
+
+function logSession(type, name, action, token) {
+  fetch(SESSION_LOG_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, name, action, token }),
+  }).catch(() => {});
+}
 
 const DONUT_COLORS = ["#C9A24B", "#7A2E2E", "#3B82F6", "#8A9A82", "#F59E0B", "#94A3B8"];
 
@@ -788,7 +797,10 @@ export default function LedgerDashboard() {
     return (
       <LoginScreen
         onLogin={() => {
+          const sessionToken = crypto.randomUUID();
           sessionStorage.setItem(AUTH_KEY, "true");
+          sessionStorage.setItem(AUTH_KEY + "-token", sessionToken);
+          logSession("admin", ADMIN_USERNAME, "login", sessionToken);
           setAuthed(true);
         }}
       />
@@ -796,6 +808,9 @@ export default function LedgerDashboard() {
   }
 
   function logout() {
+    const token = sessionStorage.getItem(AUTH_KEY + "-token");
+    logSession("admin", ADMIN_USERNAME, "logout", token);
+    sessionStorage.removeItem(AUTH_KEY + "-token");
     sessionStorage.removeItem(AUTH_KEY);
     setAuthed(false);
   }

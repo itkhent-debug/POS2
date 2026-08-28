@@ -30,6 +30,15 @@ const STAFF_ACCOUNTS = [
 const CLOCKIN_URL = "https://tech12312.app.n8n.cloud/webhook/pos-clockin";
 const CLOCKOUT_URL = "https://tech12312.app.n8n.cloud/webhook/pos-clockout";
 const SHIFT_KEY = "cafe-brewm-pos-shift";
+const SESSION_LOG_URL = "https://tech12312.app.n8n.cloud/webhook/pos-session-log";
+
+function logSession(type, name, action, token) {
+  fetch(SESSION_LOG_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, name, action, token }),
+  }).catch(() => {});
+}
 
 const PRODUCTS = [
   // Espresso
@@ -269,6 +278,9 @@ export default function PosApp() {
     setClockBarActive(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setClockBarActive(true)));
 
+    const sessionToken = crypto.randomUUID();
+    logSession("staff", staffName, "login", sessionToken);
+
     const [info] = await Promise.all([
       fetch(CLOCKIN_URL, {
         method: "POST",
@@ -290,7 +302,7 @@ export default function PosApp() {
     const resolvedClockIn = info?.success ? info : fallback;
     setCurrentStaff(staffName);
     setClockInInfo(resolvedClockIn);
-    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn }));
+    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn, sessionToken }));
     setAuthPhase("timein");
 
     setTimeout(() => setAuthPhase("pos"), 2600);
@@ -300,6 +312,11 @@ export default function PosApp() {
     setAuthPhase("loggingout");
     setClockBarActive(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setClockBarActive(true)));
+
+    if (currentStaff) {
+      const saved = JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null");
+      logSession("staff", currentStaff, "logout", saved?.sessionToken);
+    }
 
     const [outInfo] = await Promise.all([
       currentStaff
