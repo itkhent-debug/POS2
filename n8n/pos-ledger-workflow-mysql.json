@@ -216,11 +216,12 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [-144, 672],
+      "alwaysOutputData": true,
       "credentials": { "googleSheetsOAuth2Api": { "id": "QU7poqlcsgznqVuc", "name": "Google Sheets account" } }
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.all().map(item => item.json);\n\nconst orders = rows.map(r => ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  staff: r.Staff,\n  month: (r.Date || '').slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
+        "jsCode": "const rows = $input.all().map(item => item.json).filter(r => r.OrderNumber);\n\nconst orders = rows.map(r => ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  staff: r.Staff,\n  month: (r.Date || '').slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
       },
       "id": "shape-response",
       "name": "Shape Response",
