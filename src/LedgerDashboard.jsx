@@ -752,6 +752,15 @@ function InventoryTab() {
   );
 }
 
+function workHours(timeInTs, timeOutTs) {
+  if (!timeInTs || !timeOutTs) return null;
+  const inDate = new Date(timeInTs.replace(" ", "T"));
+  const outDate = new Date(timeOutTs.replace(" ", "T"));
+  const ms = outDate - inDate;
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  return ms / 1000 / 60 / 60;
+}
+
 function StaffTab() {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -793,6 +802,7 @@ function StaffTab() {
         ["Staff", shift.staffName],
         ["Time In", `${shift.dayIn}, ${shift.dateIn} at ${shift.timeIn}`],
         ["Time Out", shift.timeOut ? `${shift.dayOut}, ${shift.dateOut} at ${shift.timeOut}` : "Still on duty"],
+        ["Work Hours", workHours(shift.timeInTs, shift.timeOutTs)?.toFixed(2) ?? "—"],
         ["Status", shift.status],
         ["Orders handled", shift.orderCount],
         ["Total sales", `P${peso(shift.totalSales)}`],
@@ -818,11 +828,12 @@ function StaffTab() {
 
     autoTable(doc, {
       startY: 32,
-      head: [["Staff", "Time In", "Time Out", "Status", "Orders", "Sales", "Profit"]],
+      head: [["Staff", "Time In", "Time Out", "Work Hours", "Status", "Orders", "Sales", "Profit"]],
       body: shifts.map((s) => [
         s.staffName,
         `${s.dayIn}, ${s.dateIn} ${s.timeIn}`,
         s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "Active",
+        workHours(s.timeInTs, s.timeOutTs)?.toFixed(2) ?? "—",
         s.status,
         s.orderCount,
         `P${peso(s.totalSales)}`,
@@ -839,9 +850,12 @@ function StaffTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">
-          {shifts.length} shift{shifts.length !== 1 ? "s" : ""} recorded
-        </p>
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Timesheet Logs</h2>
+          <p className="text-sm text-slate-500">
+            {shifts.length} shift{shifts.length !== 1 ? "s" : ""} recorded
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
@@ -869,6 +883,7 @@ function StaffTab() {
                 <th className="text-left px-4 py-2.5 font-medium text-slate-500">Staff</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time In</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time Out</th>
+                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Work Hours</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Status</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Orders</th>
                 <th className="text-left px-3 py-2.5 font-medium text-slate-500">Sales</th>
@@ -879,17 +894,17 @@ function StaffTab() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-400">Loading staff records…</td>
+                  <td colSpan={9} className="text-center py-10 text-slate-400">Loading staff records…</td>
                 </tr>
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-rose-500">{error}</td>
+                  <td colSpan={9} className="text-center py-10 text-rose-500">{error}</td>
                 </tr>
               )}
               {!loading && !error && shifts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-400">
+                  <td colSpan={9} className="text-center py-10 text-slate-400">
                     No shift records yet. Staff need to log in on the POS to start tracking.
                   </td>
                 </tr>
@@ -902,6 +917,9 @@ function StaffTab() {
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{s.dayIn}, {s.dateIn} {s.timeIn}</td>
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">
                       {s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "—"}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono-num text-slate-900">
+                      {workHours(s.timeInTs, s.timeOutTs)?.toFixed(2) ?? "—"}
                     </td>
                     <td className="px-3 py-2.5">
                       {s.status === "active" ? (

@@ -307,7 +307,7 @@
                   {
                       "parameters":  {
                                          "operation":  "executeQuery",
-                                         "query":  "SELECT s.id, s.staff_name, s.day_in, s.date_in, s.time_in, s.day_out, s.date_out, s.time_out, s.status, COALESCE((SELECT COUNT(*) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS order_count, COALESCE((SELECT SUM(o.total) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS total_sales, COALESCE((SELECT SUM(o.profit) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS total_profit FROM shifts s ORDER BY s.id DESC",
+                                         "query":  "SELECT s.id, s.staff_name, s.day_in, s.date_in, s.time_in, s.time_in_ts, s.day_out, s.date_out, s.time_out, s.time_out_ts, s.status, COALESCE((SELECT COUNT(*) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS order_count, COALESCE((SELECT SUM(o.total) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS total_sales, COALESCE((SELECT SUM(o.profit) FROM orders o WHERE o.staff = s.staff_name AND o.created_at \u003e= s.time_in_ts AND o.created_at \u003c= COALESCE(s.time_out_ts, NOW())), 0) AS total_profit FROM shifts s ORDER BY s.id DESC",
                                          "options":  {
 
                                                      }
@@ -330,7 +330,7 @@
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "const rows = $input.all().map(i =\u003e i.json).filter(r =\u003e r.id);\nconst shifts = rows.map(r =\u003e ({\n  id: r.id,\n  staffName: r.staff_name,\n  dayIn: r.day_in,\n  dateIn: r.date_in,\n  timeIn: r.time_in,\n  dayOut: r.day_out,\n  dateOut: r.date_out,\n  timeOut: r.time_out,\n  status: r.status,\n  orderCount: Number(r.order_count) || 0,\n  totalSales: Number(r.total_sales) || 0,\n  totalProfit: Number(r.total_profit) || 0\n}));\nreturn [{ json: { success: true, count: shifts.length, shifts } }];"
+                                         "jsCode":  "const rows = $input.all().map(i =\u003e i.json).filter(r =\u003e r.id);\nconst shifts = rows.map(r =\u003e ({\n  id: r.id,\n  staffName: r.staff_name,\n  dayIn: r.day_in,\n  dateIn: r.date_in,\n  timeIn: r.time_in,\n  timeInTs: r.time_in_ts,\n  dayOut: r.day_out,\n  dateOut: r.date_out,\n  timeOut: r.time_out,\n  timeOutTs: r.time_out_ts,\n  status: r.status,\n  orderCount: Number(r.order_count) || 0,\n  totalSales: Number(r.total_sales) || 0,\n  totalProfit: Number(r.total_profit) || 0\n}));\nreturn [{ json: { success: true, count: shifts.length, shifts } }];"
                                      },
                       "id":  "shape-list",
                       "name":  "Shape Shifts Response",
