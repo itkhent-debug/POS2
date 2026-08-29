@@ -19,15 +19,15 @@ import {
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
-const INVENTORY_API_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-inventory";
-const SHIFTS_API_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-shifts";
-const RESET_API_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-reset-data";
+const INVENTORY_API_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-inventory";
+const SHIFTS_API_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-shifts";
+const RESET_API_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-reset-data";
 
-const LEDGER_API_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-ledger-data";
+const LEDGER_API_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-ledger-data";
 const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
-const SESSION_LOG_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-session-log";
+const SESSION_LOG_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-session-log";
 
 function logSession(type, name, action, token) {
   fetch(SESSION_LOG_URL, {

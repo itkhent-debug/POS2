@@ -27,10 +27,10 @@ const STAFF_ACCOUNTS = [
   { name: "Juan", password: "juan123" },
   { name: "Maria", password: "maria123" },
 ];
-const CLOCKIN_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-clockin";
-const CLOCKOUT_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-clockout";
+const CLOCKIN_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-clockin";
+const CLOCKOUT_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-clockout";
 const SHIFT_KEY = "cafe-brewm-pos-shift";
-const SESSION_LOG_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-session-log";
+const SESSION_LOG_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-session-log";
 
 function logSession(type, name, action, token) {
   fetch(SESSION_LOG_URL, {
@@ -177,7 +177,7 @@ const PAYMENT_METHODS = [
 ];
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
-const N8N_WEBHOOK_URL = "https://blues-green-rica-copy.trycloudflare.com/webhook/pos-order";
+const N8N_WEBHOOK_URL = "https://redeem-dark-talking-handling.trycloudflare.com/webhook/pos-order";
 
 function money(n) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

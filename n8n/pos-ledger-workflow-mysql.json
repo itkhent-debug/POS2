@@ -31,39 +31,6 @@
                                                             ]
                                                         ]
                                            },
-                        "Format Order":  {
-                                             "main":  [
-                                                          [
-                                                              {
-                                                                  "node":  "Append to Ledger",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ]
-                                                      ]
-                                         },
-                        "Append to Ledger":  {
-                                                 "main":  [
-                                                              [
-                                                                  {
-                                                                      "node":  "Append to Ledger (Backup)",
-                                                                      "type":  "main",
-                                                                      "index":  0
-                                                                  }
-                                                              ]
-                                                          ]
-                                             },
-                        "Append to Ledger (Backup)":  {
-                                                          "main":  [
-                                                                       [
-                                                                           {
-                                                                               "node":  "Insert Order (MySQL)",
-                                                                               "type":  "main",
-                                                                               "index":  0
-                                                                           }
-                                                                       ]
-                                                                   ]
-                                                      },
                         "Insert Order (MySQL)":  {
                                                      "main":  [
                                                                   [
@@ -75,28 +42,6 @@
                                                                   ]
                                                               ]
                                                  },
-                        "Format Customer":  {
-                                                "main":  [
-                                                             [
-                                                                 {
-                                                                     "node":  "Upsert Customer (CRM)",
-                                                                     "type":  "main",
-                                                                     "index":  0
-                                                                 }
-                                                             ]
-                                                         ]
-                                            },
-                        "Upsert Customer (CRM)":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Upsert Customer (MySQL)",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  },
                         "Upsert Customer (MySQL)":  {
                                                         "main":  [
                                                                      [
@@ -104,37 +49,10 @@
                                                                              "node":  "Notify Slack",
                                                                              "type":  "main",
                                                                              "index":  0
-                                                                         },
-                                                                         {
-                                                                             "node":  "Respond to POS",
-                                                                             "type":  "main",
-                                                                             "index":  0
                                                                          }
                                                                      ]
                                                                  ]
                                                     },
-                        "Ledger Data Webhook":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Read Ledger",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Read Ledger":  {
-                                            "main":  [
-                                                         [
-                                                             {
-                                                                 "node":  "Shape Response",
-                                                                 "type":  "main",
-                                                                 "index":  0
-                                                             }
-                                                         ]
-                                                     ]
-                                        },
                         "Shape Response":  {
                                                "main":  [
                                                             [
@@ -145,28 +63,68 @@
                                                                 }
                                                             ]
                                                         ]
-                                           }
+                                           },
+                        "Notify Slack":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Respond to POS",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Format Order":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Insert Order (MySQL)",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Format Customer":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Upsert Customer (MySQL)",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Ledger Data Webhook":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Select Orders (MySQL)",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Select Orders (MySQL)":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Shape Response",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  }
                     },
     "settings":  {
                      "executionOrder":  "v1",
                      "binaryMode":  "separate"
                  },
     "nodes":  [
-                  {
-                      "parameters":  {
-                                         "content":  "## MAHALAGA BAGO I-ACTIVATE\n1. Sa 2 MySQL node (\"Insert Order (MySQL)\", \"Upsert Customer (MySQL)\"), i-click ang Credential dropdown → Create New → gamitin:\nHost: altaria.proxy.rlwy.net\nPort: 23482\nUser: root\nPassword: F1t9s3ol\nDatabase: cafe_brewm\n2. Siguraduhing TALAGANG BLANGKO ang Row 1 sa 3 Google Sheets (Main Ledger, Customers, Backup Ledger).\n3. Activate.",
-                                         "height":  260,
-                                         "width":  380
-                                     },
-                      "id":  "note-node",
-                      "name":  "Setup Notes",
-                      "type":  "n8n-nodes-base.stickyNote",
-                      "typeVersion":  1,
-                      "position":  [
-                                       -608,
-                                       -96
-                                   ]
-                  },
                   {
                       "parameters":  {
                                          "httpMethod":  "POST",
@@ -245,98 +203,6 @@
                   },
                   {
                       "parameters":  {
-                                         "operation":  "append",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1hphbw2OXPi2Mq0RVtauzbfG9YmfQvx8EBRFkzXmplC4",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "columns":  {
-                                                         "mappingMode":  "autoMapInputData",
-                                                         "value":  {
-
-                                                                   },
-                                                         "matchingColumns":  [
-
-                                                                             ],
-                                                         "schema":  [
-
-                                                                    ],
-                                                         "attemptToConvertTypes":  false,
-                                                         "convertFieldsToString":  false
-                                                     },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "append-ledger",
-                      "name":  "Append to Ledger",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       304,
-                                       112
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "operation":  "append",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1ykV0fyiakd60YV2j_1AgBkX0cHhcTp5ggeNg1G-CeUg",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "columns":  {
-                                                         "mappingMode":  "autoMapInputData",
-                                                         "value":  {
-
-                                                                   },
-                                                         "matchingColumns":  [
-
-                                                                             ],
-                                                         "schema":  [
-
-                                                                    ],
-                                                         "attemptToConvertTypes":  false,
-                                                         "convertFieldsToString":  false
-                                                     },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "append-backup",
-                      "name":  "Append to Ledger (Backup)",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       512,
-                                       112
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
                                          "operation":  "executeQuery",
                                          "query":  "INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, \u0027{{$json.Day}}\u0027, \u0027{{$json.Date}}\u0027, \u0027{{$json.Time}}\u0027, \u0027{{$json.Customer.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.Items.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, \u0027{{$json.PaymentMethod}}\u0027, \u0027{{$json.OrderType}}\u0027, \u0027{{ ($json.Note || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, \u0027{{$json.Staff.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027)",
                                          "options":  {
@@ -373,52 +239,6 @@
                   },
                   {
                       "parameters":  {
-                                         "operation":  "appendOrUpdate",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1hv-xA7ONxYLrqkva3AtOU50Sg5hgL7FwH7zHpqsrrB0",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "columns":  {
-                                                         "mappingMode":  "autoMapInputData",
-                                                         "value":  {
-
-                                                                   },
-                                                         "matchingColumns":  [
-                                                                                 "Name"
-                                                                             ],
-                                                         "schema":  [
-
-                                                                    ],
-                                                         "attemptToConvertTypes":  false,
-                                                         "convertFieldsToString":  false
-                                                     },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "upsert-customer",
-                      "name":  "Upsert Customer (CRM)",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       1136,
-                                       112
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
                                          "operation":  "executeQuery",
                                          "query":  "INSERT INTO customers (name, last_visit_day, last_visit_date, last_visit_time, last_order_total, last_payment_method, last_order_type) VALUES (\u0027{{$json.Name.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.LastVisitDay}}\u0027, \u0027{{$json.LastVisitDate}}\u0027, \u0027{{$json.LastVisitTime}}\u0027, {{$json.LastOrderTotal}}, \u0027{{$json.LastPaymentMethod}}\u0027, \u0027{{$json.LastOrderType}}\u0027) ON DUPLICATE KEY UPDATE last_visit_day=VALUES(last_visit_day), last_visit_date=VALUES(last_visit_date), last_visit_time=VALUES(last_visit_time), last_order_total=VALUES(last_order_total), last_payment_method=VALUES(last_payment_method), last_order_type=VALUES(last_order_type)",
                                          "options":  {
@@ -445,8 +265,8 @@
                                          "select":  "channel",
                                          "channelId":  {
                                                            "__rl":  true,
-                                                           "value":  "https://app.slack.com/client/T0B7P2R48FN/C0B7P2RA0UU",
-                                                           "mode":  "url"
+                                                           "value":  "C0B7P2RA0UU",
+                                                           "mode":  "id"
                                                        },
                                          "text":  "=✅ *Order #{{$(\u0027Format Order\u0027).item.json.OrderNumber}} done!*\n💰 ₱{{$(\u0027Format Order\u0027).item.json.Total}}\n👤 {{$(\u0027Format Order\u0027).item.json.Customer}}\n🧑‍💼 Staff: {{$(\u0027Format Order\u0027).item.json.Staff}}\n📅 {{$(\u0027Format Order\u0027).item.json.Day}}, {{$(\u0027Format Order\u0027).item.json.Date}} at {{$(\u0027Format Order\u0027).item.json.Time}}",
                                          "otherOptions":  {
@@ -464,7 +284,7 @@
                       "webhookId":  "82efe828-4779-4b72-8d9f-76f051a00123",
                       "credentials":  {
                                           "slackApi":  {
-                                                           "id":  "avujMrT0qlGH8wf2",
+                                                           "id":  "hj8eroD6bC9yd4GQ",
                                                            "name":  "Slack account"
                                                        }
                                       },
@@ -524,39 +344,7 @@
                   },
                   {
                       "parameters":  {
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1hphbw2OXPi2Mq0RVtauzbfG9YmfQvx8EBRFkzXmplC4",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "read-ledger",
-                      "name":  "Read Ledger",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       -144,
-                                       672
-                                   ],
-                      "alwaysOutputData":  true,
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "jsCode":  "const rows = $input.all().map(item =\u003e item.json).filter(r =\u003e r.OrderNumber);\n\nconst orders = rows.map(r =\u003e ({\n  orderNumber: r.OrderNumber,\n  day: r.Day,\n  date: r.Date,\n  time: r.Time,\n  customer: r.Customer,\n  items: r.Items,\n  subtotal: Number(r.Subtotal) || 0,\n  discount: Number(r.Discount) || 0,\n  tax: Number(r.Tax) || 0,\n  total: Number(r.Total) || 0,\n  cost: Number(r.Cost) || 0,\n  profit: Number(r.Profit) || 0,\n  paymentMethod: r.PaymentMethod,\n  orderType: r.OrderType,\n  note: r.Note,\n  staff: r.Staff,\n  month: (r.Date || \u0027\u0027).slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
+                                         "jsCode":  "const rows = $input.all().map(item =\u003e item.json).filter(r =\u003e r.id);\n\nconst orders = rows.map(r =\u003e ({\n  orderNumber: r.order_number,\n  day: r.day,\n  date: r.date,\n  time: r.time,\n  customer: r.customer,\n  items: r.items,\n  subtotal: Number(r.subtotal) || 0,\n  discount: Number(r.discount) || 0,\n  tax: Number(r.tax) || 0,\n  total: Number(r.total) || 0,\n  cost: Number(r.cost) || 0,\n  profit: Number(r.profit) || 0,\n  paymentMethod: r.payment_method,\n  orderType: r.order_type,\n  note: r.note,\n  staff: r.staff,\n  month: (r.date || \u0027\u0027).slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
                                      },
                       "id":  "shape-response",
                       "name":  "Shape Response",
@@ -581,6 +369,30 @@
                       "typeVersion":  1.1,
                       "position":  [
                                        304,
+                                       672
+                                   ]
+                  },
+                  {
+                      "alwaysOutputData":  true,
+                      "id":  "select-orders-mysql",
+                      "name":  "Select Orders (MySQL)",
+                      "type":  "n8n-nodes-base.mySql",
+                      "credentials":  {
+                                          "mySql":  {
+                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "name":  "MySQL account"
+                                                    }
+                                      },
+                      "typeVersion":  2.4,
+                      "parameters":  {
+                                         "query":  "SELECT * FROM orders ORDER BY id DESC",
+                                         "operation":  "executeQuery",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "position":  [
+                                       -144,
                                        672
                                    ]
                   }
