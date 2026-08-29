@@ -936,7 +936,7 @@ function StaffTab() {
 }
 
 export default function LedgerDashboard() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === "true");
+  const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === "true");
   const [activeTab, setActiveTab] = useState("overview");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1200,8 +1200,8 @@ export default function LedgerDashboard() {
       <LoginScreen
         onLogin={() => {
           const sessionToken = crypto.randomUUID();
-          sessionStorage.setItem(AUTH_KEY, "true");
-          sessionStorage.setItem(AUTH_KEY + "-token", sessionToken);
+          localStorage.setItem(AUTH_KEY, "true");
+          localStorage.setItem(AUTH_KEY + "-token", sessionToken);
           logSession("admin", ADMIN_USERNAME, "login", sessionToken);
           setAuthed(true);
         }}
@@ -1210,10 +1210,10 @@ export default function LedgerDashboard() {
   }
 
   function logout() {
-    const token = sessionStorage.getItem(AUTH_KEY + "-token");
+    const token = localStorage.getItem(AUTH_KEY + "-token");
     logSession("admin", ADMIN_USERNAME, "logout", token);
-    sessionStorage.removeItem(AUTH_KEY + "-token");
-    sessionStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(AUTH_KEY + "-token");
+    localStorage.removeItem(AUTH_KEY);
     setAuthed(false);
   }
 
