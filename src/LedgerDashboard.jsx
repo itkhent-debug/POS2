@@ -128,7 +128,7 @@ function MiniDonut({ data, centerValue, centerLabel }) {
             </span>
           </div>
         ))}
-        {data.length === 0 && <p className="text-xs text-slate-400">Walang datos pa</p>}
+        {data.length === 0 && <p className="text-xs text-slate-400">No data yet</p>}
       </div>
     </div>
   );
@@ -153,16 +153,16 @@ function SalesTrendChart({ data }) {
       : "";
 
   if (data.length === 0) {
-    return <p className="text-sm text-slate-400 py-16 text-center">Walang sales data pa.</p>;
+    return <p className="text-sm text-slate-400 py-16 text-center">No sales data yet.</p>;
   }
 
   if (data.length === 1) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-center">
         <p className="font-mono-num text-3xl font-semibold text-slate-900">₱{peso(data[0].revenue)}</p>
-        <p className="text-xs text-slate-500 mt-1">Kabuuang benta ngayong {data[0].label}</p>
+        <p className="text-xs text-slate-500 mt-1">Total sales for {data[0].label}</p>
         <p className="text-xs text-slate-400 mt-3">
-          Lalabas ang trend chart kapag may sales data na sa 2+ magkaibang araw.
+          The trend chart will appear once there's sales data from 2+ different days.
         </p>
       </div>
     );
@@ -258,8 +258,8 @@ function OverviewTab() {
       else newCustomers += 1;
     }
     return [
-      { name: "Bagong customer", value: newCustomers, color: DONUT_COLORS[0] },
-      { name: "Balik na customer", value: returning, color: DONUT_COLORS[1] },
+      { name: "New customer", value: newCustomers, color: DONUT_COLORS[0] },
+      { name: "Returning customer", value: returning, color: DONUT_COLORS[1] },
     ];
   }, [orders]);
 
@@ -323,7 +323,7 @@ function OverviewTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">Buod ng buong operations</p>
+        <p className="text-sm text-slate-500">Overview of all operations</p>
         <button
           onClick={load}
           className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
@@ -336,7 +336,7 @@ function OverviewTab() {
       {/* Sales trend + payment donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales Trend (huling 14 araw na may order)</h3>
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales Trend (last 14 days with orders)</h3>
           <SalesTrendChart data={salesTrend} />
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-5">
@@ -352,11 +352,11 @@ function OverviewTab() {
           <MiniDonut data={orderTypeBreakdown} centerValue={orders.length} centerLabel="orders" />
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Bago vs Balik na Customer</h3>
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">New vs Returning Customer</h3>
           <MiniDonut
             data={customerBreakdown}
             centerValue={`${customerBreakdown[1] ? Math.round((customerBreakdown[1].value / Math.max(1, customerBreakdown[0].value + customerBreakdown[1].value)) * 100) : 0}%`}
-            centerLabel="balik"
+            centerLabel="returning"
           />
         </div>
       </div>
@@ -385,7 +385,7 @@ function OverviewTab() {
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales per Staff</h3>
           <div className="space-y-2.5">
-            {staffSales.length === 0 && <p className="text-sm text-slate-400 py-6 text-center">Walang datos pa.</p>}
+            {staffSales.length === 0 && <p className="text-sm text-slate-400 py-6 text-center">No data yet.</p>}
             {staffSales.map((s) => (
               <div key={s.name} className="flex items-center gap-3">
                 <span className="text-xs text-slate-500 w-20 shrink-0 truncate">{s.name}</span>
@@ -409,7 +409,7 @@ function OverviewTab() {
             <AlertTriangle className="h-4 w-4 text-rose-500" /> Low Stock Alerts
           </h3>
           {lowStockItems.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">Walang mababang stock ngayon. 🎉</p>
+            <p className="text-sm text-slate-400 py-6 text-center">No low stock right now. 🎉</p>
           ) : (
             <div className="space-y-2">
               {lowStockItems.map((it) => (
@@ -419,7 +419,7 @@ function OverviewTab() {
                     <p className="text-xs text-slate-500">{it.category}</p>
                   </div>
                   <span className="font-mono-num text-sm font-semibold text-rose-600">
-                    {it.quantity} {it.unit} na lang
+                    {it.quantity} {it.unit} left
                   </span>
                 </div>
               ))}
@@ -432,7 +432,7 @@ function OverviewTab() {
             <UserCheck className="h-4 w-4 text-emerald-500" /> Staff On Duty
           </h3>
           {onDuty.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">Walang naka-clock in ngayon.</p>
+            <p className="text-sm text-slate-400 py-6 text-center">No one clocked in right now.</p>
           ) : (
             <div className="space-y-2">
               {onDuty.map((s) => (
@@ -455,7 +455,7 @@ function OverviewTab() {
           <Users className="h-4 w-4 text-slate-400" /> Recent Customers
         </h3>
         {recentCustomers.length === 0 ? (
-          <p className="text-sm text-slate-400 py-6 text-center">Wala pang customers.</p>
+          <p className="text-sm text-slate-400 py-6 text-center">No customers yet.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {recentCustomers.map((o) => (
@@ -488,7 +488,7 @@ function LoginScreen({ onLogin }) {
       setError("");
       onLogin();
     } else {
-      setError("Maling username o password.");
+      setError("Wrong username or password.");
     }
   }
 
@@ -558,7 +558,7 @@ function InventoryTab() {
       const data = await res.json();
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
-      setError("Hindi ma-load ang inventory. Check kung Active ang n8n workflow.");
+      setError("Couldn't load inventory. Check if the n8n workflow is Active.");
     } finally {
       setLoading(false);
     }
@@ -588,7 +588,7 @@ function InventoryTab() {
       setModalOpen(false);
       await load();
     } catch (err) {
-      setError("Hindi na-save ang item. Subukan ulit.");
+      setError("Couldn't save the item. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -598,7 +598,7 @@ function InventoryTab() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-slate-500">
-          {items.length} item{items.length !== 1 ? "s" : ""} sa stock
+          {items.length} item{items.length !== 1 ? "s" : ""} in stock
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -645,7 +645,7 @@ function InventoryTab() {
               {!loading && !error && items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-10 text-slate-400">
-                    Walang stock items pa. I-click ang "Add / Restock Item" para magdagdag.
+                    No stock items yet. Click "Add / Restock Item" to add one.
                   </td>
                 </tr>
               )}
@@ -694,7 +694,7 @@ function InventoryTab() {
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="hal. Coffee Beans"
+                  placeholder="e.g. Coffee Beans"
                   className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
                 />
               </div>
@@ -703,7 +703,7 @@ function InventoryTab() {
                 <input
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  placeholder="hal. Raw Materials"
+                  placeholder="e.g. Raw Materials"
                   className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
                 />
               </div>
@@ -714,7 +714,7 @@ function InventoryTab() {
                     type="number"
                     value={form.quantity}
                     onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
-                    placeholder="hal. 10"
+                    placeholder="e.g. 10"
                     className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
                   />
                 </div>
@@ -729,7 +729,7 @@ function InventoryTab() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Low stock alert kapag baba sa:</label>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Low stock alert when quantity drops below:</label>
                 <input
                   type="number"
                   value={form.lowStockThreshold}
@@ -765,7 +765,7 @@ function StaffTab() {
       const data = await res.json();
       setShifts(Array.isArray(data.shifts) ? data.shifts : []);
     } catch (err) {
-      setError("Hindi ma-load ang staff records. Check kung Active ang n8n workflow.");
+      setError("Couldn't load staff records. Check if the n8n workflow is Active.");
     } finally {
       setLoading(false);
     }
@@ -840,7 +840,7 @@ function StaffTab() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-slate-500">
-          {shifts.length} shift{shifts.length !== 1 ? "s" : ""} naka-record
+          {shifts.length} shift{shifts.length !== 1 ? "s" : ""} recorded
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -890,7 +890,7 @@ function StaffTab() {
               {!loading && !error && shifts.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center py-10 text-slate-400">
-                    Walang shift records pa. Mag-log in ang staff sa POS para magsimula ang tracking.
+                    No shift records yet. Staff need to log in on the POS to start tracking.
                   </td>
                 </tr>
               )}
@@ -961,7 +961,7 @@ export default function LedgerDashboard() {
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
-      setError("Hindi ma-load ang ledger data. Check kung Active ang n8n workflow.");
+      setError("Couldn't load ledger data. Check if the n8n workflow is Active.");
     } finally {
       setLoading(false);
     }
@@ -1183,14 +1183,14 @@ export default function LedgerDashboard() {
       ]);
 
       if (!resetResult?.success) {
-        setResetError("Na-download ang backup, pero hindi na-confirm ang reset. Check kung Active ang n8n workflow.");
+        setResetError("Backup downloaded, but the reset wasn't confirmed. Check if the n8n workflow is Active.");
         setResetLoading(false);
         return;
       }
 
       window.location.reload();
     } catch (err) {
-      setResetError("May error habang nire-reset. Subukan ulit.");
+      setResetError("An error occurred while resetting. Please try again.");
       setResetLoading(false);
     }
   }
@@ -1269,21 +1269,21 @@ export default function LedgerDashboard() {
               {resetLoading ? (
                 <div className="text-center py-4">
                   <RefreshCw className="h-8 w-8 mx-auto mb-4 text-slate-900 animate-spin" />
-                  <p className="text-sm font-medium text-slate-900 mb-1">Gumagawa ng backup PDF at nililinis ang data…</p>
-                  <p className="text-xs text-slate-400">Huwag isara ang tab na ito.</p>
+                  <p className="text-sm font-medium text-slate-900 mb-1">Generating backup PDF and clearing data…</p>
+                  <p className="text-xs text-slate-400">Don't close this tab.</p>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center gap-2 mb-3 text-rose-600">
                     <AlertTriangle className="h-5 w-5" />
-                    <h3 className="text-base font-semibold">Reset lahat ng data?</h3>
+                    <h3 className="text-base font-semibold">Reset all data?</h3>
                   </div>
                   <p className="text-sm text-slate-600 mb-4">
-                    Permanenteng mabubura ang <strong>lahat</strong> ng orders, customers, staff shifts, at inventory — sa Google Sheets AT MySQL. Awtomatikong gagawa muna ng backup PDF bago ito magpatuloy. Hindi na maibabalik ito pagkatapos.
+                    This will permanently delete <strong>all</strong> orders, customers, staff shifts, and inventory from MySQL. It will automatically generate a backup PDF first. This cannot be undone afterward.
                   </p>
                   {resetError && <p className="text-sm text-rose-600 mb-3">{resetError}</p>}
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">
-                    I-type ang <strong>RESET</strong> para kumpirmahin:
+                    Type <strong>RESET</strong> to confirm:
                   </label>
                   <input
                     value={resetConfirmText}
@@ -1406,7 +1406,7 @@ export default function LedgerDashboard() {
         <div className="rounded-lg border border-slate-200 bg-white p-5 mb-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Top-selling items {selectedMonth !== "All" ? `— ${monthLabel(selectedMonth)}` : ""}</h2>
           {topProducts.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">Walang data pa para sa donut chart.</p>
+            <p className="text-sm text-slate-400 py-6 text-center">No data yet for the donut chart.</p>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-8">
               <svg width="160" height="160" viewBox="0 0 120 120" className="shrink-0">
@@ -1525,9 +1525,9 @@ export default function LedgerDashboard() {
             <div>
               <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-0.5">Computed total</p>
               <p className="text-sm text-slate-700">
-                {selectedStaff === "All" ? "Lahat ng staff" : selectedStaff}
+                {selectedStaff === "All" ? "All staff" : selectedStaff}
                 {" · "}
-                {selectedDay === "All" ? "Lahat ng araw" : selectedDay}
+                {selectedDay === "All" ? "All days" : selectedDay}
               </p>
             </div>
             <div className="flex items-center gap-6 ml-auto">
@@ -1587,7 +1587,7 @@ export default function LedgerDashboard() {
                 {!loading && !error && filtered.length === 0 && (
                   <tr>
                     <td colSpan={COLUMNS.length + 1} className="text-center py-10 text-slate-400">
-                      Walang orders na nahanap.
+                      No orders found.
                     </td>
                   </tr>
                 )}

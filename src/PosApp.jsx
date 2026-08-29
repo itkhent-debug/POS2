@@ -197,7 +197,7 @@ function StaffLoginScreen({ onLogin }) {
       setError("");
       onLogin(match.name);
     } else {
-      setError("Maling username o password.");
+      setError("Wrong username or password.");
     }
   }
 
@@ -217,7 +217,7 @@ function StaffLoginScreen({ onLogin }) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ilagay ang username mo"
+              placeholder="Enter your username"
               autoFocus
               className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
             />
@@ -437,11 +437,11 @@ export default function PosApp() {
       });
       const data = await res.json().catch(() => null);
       return {
-        text: data?.message || `Order #${String(payload.orderNumber).padStart(4, "0")} logged sa ledger!`,
+        text: data?.message || `Order #${String(payload.orderNumber).padStart(4, "0")} logged to ledger!`,
         tone: "success",
       };
     } catch (err) {
-      return { text: "Order placed, pero hindi na-sync sa ledger (check n8n connection).", tone: "error" };
+      return { text: "Order placed, but not synced to ledger (check n8n connection).", tone: "error" };
     }
   }
 
@@ -509,7 +509,7 @@ export default function PosApp() {
         `}</style>
         <div className="w-[320px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
           <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>👋</div>
-          <p className="font-medium text-lg mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Bye, {currentStaff}! Ingat!</p>
+          <p className="font-medium text-lg mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Bye, {currentStaff}! Take care!</p>
           <p className="text-xs text-neutral-400 mb-4">Shift Summary</p>
 
           <div className="space-y-3 text-left">
@@ -529,7 +529,7 @@ export default function PosApp() {
             onClick={finishLogout}
             className="w-full mt-5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
           >
-            Tapos na, Log out
+            Done, Log out
           </button>
         </div>
       </div>
@@ -550,10 +550,10 @@ export default function PosApp() {
             <>
               <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>☕</div>
               <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>
-                {authPhase === "loading" ? "Nag-clock in…" : "Nag-clock out…"}
+                {authPhase === "loading" ? "Clocking in…" : "Clocking out…"}
               </p>
               <p className="text-xs text-neutral-500 mb-4">
-                {authPhase === "loading" ? "Sinasave ang time in mo" : "Sinasave ang time out mo"}
+                {authPhase === "loading" ? "Saving your time in" : "Saving your time out"}
               </p>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
                 <div
@@ -568,7 +568,7 @@ export default function PosApp() {
               <p className="font-medium text-lg mb-3" style={{ fontFamily: "'Fraunces', serif" }}>Time In</p>
               <p className="text-2xl font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
               <p className="text-sm text-neutral-500 mt-1">{clockInInfo?.day}, {clockInInfo?.date}</p>
-              <p className="text-xs text-neutral-400 mt-4">Kumusta ang shift mo, {currentStaff}!</p>
+              <p className="text-xs text-neutral-400 mt-4">Have a great shift, {currentStaff}!</p>
             </>
           )}
         </div>
@@ -656,7 +656,7 @@ export default function PosApp() {
                   </div>
                   <div className="max-h-72 overflow-y-auto no-scrollbar">
                     {notifications.length === 0 && (
-                      <p className="px-3 py-6 text-center text-sm text-neutral-400">Walang notification pa.</p>
+                      <p className="px-3 py-6 text-center text-sm text-neutral-400">No notifications yet.</p>
                     )}
                     {notifications.map((n) => (
                       <div key={n.id} className="px-3 py-2.5 border-b border-neutral-100 flex items-start gap-2">
@@ -812,7 +812,7 @@ export default function PosApp() {
           <input
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Customer name (para sa ledger)"
+            placeholder="Customer name (for ledger)"
             className="w-full mb-4 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900 shrink-0"
           />
 
@@ -920,8 +920,8 @@ export default function PosApp() {
             {orderStatus === "loading" ? (
               <>
                 <RefreshCw className="mx-auto mb-4 h-8 w-8 text-neutral-900 animate-spin" />
-                <p className="font-display text-base mb-1">Pinoproseso ang order…</p>
-                <p className="text-xs text-neutral-500 mb-4">Sini-sync sa ledger, CRM, at Slack</p>
+                <p className="font-display text-base mb-1">Processing order…</p>
+                <p className="text-xs text-neutral-500 mb-4">Syncing to ledger, CRM, and Slack</p>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
                   <div
                     className="h-full bg-neutral-900 transition-[width] ease-linear"
@@ -935,7 +935,7 @@ export default function PosApp() {
                   🎉
                 </div>
                 <p className="font-display text-lg font-semibold text-neutral-900 mb-1">Order placed!</p>
-                <p className="text-sm text-neutral-500">Salamat sa order!</p>
+                <p className="text-sm text-neutral-500">Thanks for your order!</p>
               </>
             )}
           </div>
