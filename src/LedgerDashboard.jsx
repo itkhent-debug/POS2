@@ -156,6 +156,18 @@ function SalesTrendChart({ data }) {
     return <p className="text-sm text-slate-400 py-16 text-center">Walang sales data pa.</p>;
   }
 
+  if (data.length === 1) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <p className="font-mono-num text-3xl font-semibold text-slate-900">₱{peso(data[0].revenue)}</p>
+        <p className="text-xs text-slate-500 mt-1">Kabuuang benta ngayong {data[0].label}</p>
+        <p className="text-xs text-slate-400 mt-3">
+          Lalabas ang trend chart kapag may sales data na sa 2+ magkaibang araw.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <defs>
