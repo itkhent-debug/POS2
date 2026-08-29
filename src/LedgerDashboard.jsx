@@ -134,6 +134,57 @@ function MiniDonut({ data, centerValue, centerLabel }) {
   );
 }
 
+function SalesTrendChart({ data }) {
+  const width = 640;
+  const height = 200;
+  const padding = 24;
+  const max = Math.max(1, ...data.map((d) => d.revenue));
+
+  const points = data.map((d, idx) => {
+    const x = data.length > 1 ? padding + (idx / (data.length - 1)) * (width - padding * 2) : width / 2;
+    const y = height - padding - (d.revenue / max) * (height - padding * 2);
+    return { x, y };
+  });
+
+  const linePath = points.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  const areaPath =
+    points.length > 0
+      ? `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${height - padding} L ${points[0].x.toFixed(1)} ${height - padding} Z`
+      : "";
+
+  if (data.length === 0) {
+    return <p className="text-sm text-slate-400 py-16 text-center">Walang sales data pa.</p>;
+  }
+
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="salesTrendGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#C9A24B" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#C9A24B" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {areaPath && <path d={areaPath} fill="url(#salesTrendGradient)" />}
+      <path d={linePath} fill="none" stroke="#C9A24B" strokeWidth="2.5" />
+      {points.map((p, idx) => (
+        <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#C9A24B" />
+      ))}
+      {data.map((d, idx) => (
+        <text
+          key={d.date}
+          x={points[idx].x}
+          y={height - 6}
+          textAnchor="middle"
+          className="fill-slate-400"
+          style={{ fontSize: 9 }}
+        >
+          {d.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 function OverviewTab() {
   const [orders, setOrders] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -230,6 +281,33 @@ function OverviewTab() {
 
   const onDuty = useMemo(() => shifts.filter((s) => s.status === "active"), [shifts]);
 
+  const salesTrend = useMemo(() => {
+    const tally = new Map();
+    for (const o of orders) {
+      if (!o.date) continue;
+      tally.set(o.date, (tally.get(o.date) || 0) + (Number(o.total) || 0));
+    }
+    const sorted = Array.from(tally.entries()).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+    const last = sorted.slice(-14);
+    return last.map(([date, revenue]) => {
+      const [, m, d] = date.split("-");
+      return { date, revenue, label: `${m}/${d}` };
+    });
+  }, [orders]);
+
+  const recentCustomers = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    for (const o of orders) {
+      const name = o.customer || "Guest";
+      if (seen.has(name)) continue;
+      seen.add(name);
+      list.push(o);
+      if (list.length >= 6) break;
+    }
+    return list;
+  }, [orders]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -243,12 +321,20 @@ function OverviewTab() {
         </button>
       </div>
 
-      {/* Donut row */}
+      {/* Sales trend + payment donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales Trend (huling 14 araw na may order)</h3>
+          <SalesTrendChart data={salesTrend} />
+        </div>
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Payment Method</h3>
           <MiniDonut data={paymentBreakdown} centerValue={orders.length} centerLabel="orders" />
         </div>
+      </div>
+
+      {/* Donut row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Order Type</h3>
           <MiniDonut data={orderTypeBreakdown} centerValue={orders.length} centerLabel="orders" />
@@ -349,6 +435,31 @@ function OverviewTab() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Recent customers */}
+      <div className="rounded-lg border border-slate-200 bg-white p-5 mt-4">
+        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <Users className="h-4 w-4 text-slate-400" /> Recent Customers
+        </h3>
+        {recentCustomers.length === 0 ? (
+          <p className="text-sm text-slate-400 py-6 text-center">Wala pang customers.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            {recentCustomers.map((o) => (
+              <div key={o.customer + o.date + o.time} className="rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="h-7 w-7 rounded-full bg-[#C9A24B] text-white text-xs font-semibold flex items-center justify-center shrink-0">
+                    {(o.customer || "G").charAt(0).toUpperCase()}
+                  </span>
+                  <p className="text-sm font-medium text-slate-800 truncate">{o.customer || "Guest"}</p>
+                </div>
+                <p className="text-xs text-slate-500">{o.date} · {o.time}</p>
+                <p className="font-mono-num text-xs font-semibold text-slate-700 mt-1">₱{peso(o.total)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
