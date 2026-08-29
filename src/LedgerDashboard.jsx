@@ -16,6 +16,8 @@ import {
   X,
   Trash2,
   AlertTriangle,
+  LayoutGrid,
+  UserCheck,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
@@ -74,6 +76,283 @@ const COLUMNS = [
   { key: "time", label: "Time" },
   { key: "total", label: "Total" },
 ];
+
+function MiniDonut({ data, centerValue, centerLabel }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const r = 45;
+  const circumference = 2 * Math.PI * r;
+  let cumulative = 0;
+
+  return (
+    <div className="flex items-center gap-5">
+      <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0">
+        <g transform="rotate(-90 60 60)">
+          {total === 0 ? (
+            <circle cx="60" cy="60" r={r} fill="none" stroke="#E2E8F0" strokeWidth="16" />
+          ) : (
+            data.map((d) => {
+              const pct = (d.value / total) * 100;
+              const dash = (pct / 100) * circumference;
+              const el = (
+                <circle
+                  key={d.name}
+                  cx="60"
+                  cy="60"
+                  r={r}
+                  fill="none"
+                  stroke={d.color}
+                  strokeWidth="16"
+                  strokeDasharray={`${dash} ${circumference - dash}`}
+                  strokeDashoffset={-((cumulative / 100) * circumference)}
+                />
+              );
+              cumulative += pct;
+              return el;
+            })
+          )}
+        </g>
+        <text x="60" y="56" textAnchor="middle" className="fill-slate-900" style={{ fontSize: 17, fontWeight: 700 }}>
+          {centerValue}
+        </text>
+        <text x="60" y="72" textAnchor="middle" className="fill-slate-400" style={{ fontSize: 8 }}>
+          {centerLabel}
+        </text>
+      </svg>
+      <div className="flex-1 space-y-1.5 min-w-0">
+        {data.map((d) => (
+          <div key={d.name} className="flex items-center gap-2 text-xs">
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+            <span className="text-slate-600 truncate flex-1">{d.name}</span>
+            <span className="font-mono-num text-slate-500 shrink-0">
+              {total ? ((d.value / total) * 100).toFixed(0) : 0}%
+            </span>
+          </div>
+        ))}
+        {data.length === 0 && <p className="text-xs text-slate-400">Walang datos pa</p>}
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab() {
+  const [orders, setOrders] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
+        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+      ]);
+      setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
+      setShifts(Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : []);
+      setInventory(Array.isArray(inventoryRes.items) ? inventoryRes.items : []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const paymentBreakdown = useMemo(() => {
+    const tally = new Map();
+    for (const o of orders) {
+      const key = (o.paymentMethod || "Other").trim() || "Other";
+      tally.set(key, (tally.get(key) || 0) + 1);
+    }
+    return Array.from(tally.entries())
+      .map(([name, value], idx) => ({ name, value, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [orders]);
+
+  const orderTypeBreakdown = useMemo(() => {
+    const tally = new Map();
+    for (const o of orders) {
+      const key = (o.orderType || "Other").trim() || "Other";
+      tally.set(key, (tally.get(key) || 0) + 1);
+    }
+    return Array.from(tally.entries())
+      .map(([name, value], idx) => ({ name, value, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [orders]);
+
+  const customerBreakdown = useMemo(() => {
+    const counts = new Map();
+    for (const o of orders) {
+      const name = o.customer || "Guest";
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    let newCustomers = 0;
+    let returning = 0;
+    for (const c of counts.values()) {
+      if (c > 1) returning += 1;
+      else newCustomers += 1;
+    }
+    return [
+      { name: "Bagong customer", value: newCustomers, color: DONUT_COLORS[0] },
+      { name: "Balik na customer", value: returning, color: DONUT_COLORS[1] },
+    ];
+  }, [orders]);
+
+  const weeklyVolume = useMemo(() => {
+    const order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const tally = new Map(order.map((d) => [d, 0]));
+    for (const o of orders) {
+      if (tally.has(o.day)) tally.set(o.day, tally.get(o.day) + 1);
+    }
+    const max = Math.max(1, ...tally.values());
+    return order.map((day) => ({ day, count: tally.get(day) || 0, pct: (tally.get(day) / max) * 100 }));
+  }, [orders]);
+
+  const staffSales = useMemo(() => {
+    const tally = new Map();
+    for (const o of orders) {
+      const key = o.staff || "Unknown";
+      tally.set(key, (tally.get(key) || 0) + (Number(o.total) || 0));
+    }
+    const max = Math.max(1, ...tally.values());
+    return Array.from(tally.entries())
+      .map(([name, total], idx) => ({ name, total, pct: (total / max) * 100, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
+  }, [orders]);
+
+  const lowStockItems = useMemo(
+    () => inventory.filter((it) => Number(it.quantity) <= Number(it.lowStockThreshold)),
+    [inventory]
+  );
+
+  const onDuty = useMemo(() => shifts.filter((s) => s.status === "active"), [shifts]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-500">Buod ng buong operations</p>
+        <button
+          onClick={load}
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Donut row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Payment Method</h3>
+          <MiniDonut data={paymentBreakdown} centerValue={orders.length} centerLabel="orders" />
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Order Type</h3>
+          <MiniDonut data={orderTypeBreakdown} centerValue={orders.length} centerLabel="orders" />
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Bago vs Balik na Customer</h3>
+          <MiniDonut
+            data={customerBreakdown}
+            centerValue={`${customerBreakdown[1] ? Math.round((customerBreakdown[1].value / Math.max(1, customerBreakdown[0].value + customerBreakdown[1].value)) * 100) : 0}%`}
+            centerLabel="balik"
+          />
+        </div>
+      </div>
+
+      {/* Funnel + stage distribution row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Weekly Order Volume</h3>
+          <div className="space-y-2.5">
+            {weeklyVolume.map((d) => (
+              <div key={d.day} className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 w-20 shrink-0">{d.day}</span>
+                <div className="flex-1 h-5 rounded-md bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-md flex items-center justify-end px-2 transition-all"
+                    style={{ width: `${Math.max(d.pct, d.count ? 8 : 0)}%`, backgroundColor: "#C9A24B" }}
+                  >
+                    {d.count > 0 && <span className="text-[10px] font-semibold text-white">{d.count}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales per Staff</h3>
+          <div className="space-y-2.5">
+            {staffSales.length === 0 && <p className="text-sm text-slate-400 py-6 text-center">Walang datos pa.</p>}
+            {staffSales.map((s) => (
+              <div key={s.name} className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 w-20 shrink-0 truncate">{s.name}</span>
+                <div className="flex-1 h-5 rounded-md bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-md"
+                    style={{ width: `${Math.max(s.pct, 4)}%`, backgroundColor: s.color }}
+                  />
+                </div>
+                <span className="font-mono-num text-xs text-slate-600 w-20 text-right shrink-0">₱{peso(s.total)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Actions + tasks row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-500" /> Low Stock Alerts
+          </h3>
+          {lowStockItems.length === 0 ? (
+            <p className="text-sm text-slate-400 py-6 text-center">Walang mababang stock ngayon. 🎉</p>
+          ) : (
+            <div className="space-y-2">
+              {lowStockItems.map((it) => (
+                <div key={it.name} className="flex items-center justify-between rounded-md bg-rose-50 px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{it.name}</p>
+                    <p className="text-xs text-slate-500">{it.category}</p>
+                  </div>
+                  <span className="font-mono-num text-sm font-semibold text-rose-600">
+                    {it.quantity} {it.unit} na lang
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-emerald-500" /> Staff On Duty
+          </h3>
+          {onDuty.length === 0 ? (
+            <p className="text-sm text-slate-400 py-6 text-center">Walang naka-clock in ngayon.</p>
+          ) : (
+            <div className="space-y-2">
+              {onDuty.map((s) => (
+                <div key={s.id} className="flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{s.staffName}</p>
+                    <p className="text-xs text-slate-500">Time in: {s.timeIn}</p>
+                  </div>
+                  <span className="font-mono-num text-sm font-semibold text-emerald-600">{s.orderCount} orders</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -535,7 +814,7 @@ function StaffTab() {
 
 export default function LedgerDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === "true");
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState("overview");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -913,6 +1192,14 @@ export default function LedgerDashboard() {
         {/* Tabs */}
         <div className="flex items-center gap-1 mb-5 border-b border-slate-200">
           <button
+            onClick={() => setActiveTab("overview")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === "overview" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Overview
+          </button>
+          <button
             onClick={() => setActiveTab("orders")}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === "orders" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
@@ -938,7 +1225,9 @@ export default function LedgerDashboard() {
           </button>
         </div>
 
-        {activeTab === "inventory" ? (
+        {activeTab === "overview" ? (
+          <OverviewTab />
+        ) : activeTab === "inventory" ? (
           <InventoryTab />
         ) : activeTab === "staff" ? (
           <StaffTab />
