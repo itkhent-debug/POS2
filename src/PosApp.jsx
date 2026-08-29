@@ -250,7 +250,7 @@ function StaffLoginScreen({ onLogin }) {
 export default function PosApp() {
   const [authPhase, setAuthPhase] = useState(() => {
     try {
-      const saved = JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null");
+      const saved = JSON.parse(localStorage.getItem(SHIFT_KEY) || "null");
       return saved?.staffName ? "pos" : "login";
     } catch {
       return "login";
@@ -258,14 +258,14 @@ export default function PosApp() {
   });
   const [currentStaff, setCurrentStaff] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null")?.staffName || null;
+      return JSON.parse(localStorage.getItem(SHIFT_KEY) || "null")?.staffName || null;
     } catch {
       return null;
     }
   });
   const [clockInInfo, setClockInInfo] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null")?.clockInInfo || null;
+      return JSON.parse(localStorage.getItem(SHIFT_KEY) || "null")?.clockInInfo || null;
     } catch {
       return null;
     }
@@ -302,7 +302,7 @@ export default function PosApp() {
     const resolvedClockIn = info?.success ? info : fallback;
     setCurrentStaff(staffName);
     setClockInInfo(resolvedClockIn);
-    sessionStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn, sessionToken }));
+    localStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn, sessionToken }));
     setAuthPhase("timein");
 
     setTimeout(() => setAuthPhase("pos"), 2600);
@@ -314,7 +314,7 @@ export default function PosApp() {
     requestAnimationFrame(() => requestAnimationFrame(() => setClockBarActive(true)));
 
     if (currentStaff) {
-      const saved = JSON.parse(sessionStorage.getItem(SHIFT_KEY) || "null");
+      const saved = JSON.parse(localStorage.getItem(SHIFT_KEY) || "null");
       logSession("staff", currentStaff, "logout", saved?.sessionToken);
     }
 
@@ -338,7 +338,7 @@ export default function PosApp() {
       time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     };
 
-    sessionStorage.removeItem(SHIFT_KEY);
+    localStorage.removeItem(SHIFT_KEY);
     setClockOutInfo(outInfo?.success ? outInfo : fallbackOut);
     setAuthPhase("timeout");
   }
