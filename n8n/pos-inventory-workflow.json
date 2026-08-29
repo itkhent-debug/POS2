@@ -152,7 +152,7 @@
                                    ],
                       "credentials":  {
                                           "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "id":  "F3V6NoKAZe7EbTFC",
                                                         "name":  "MySQL account"
                                                     }
                                       },
@@ -238,7 +238,7 @@
                                    ],
                       "credentials":  {
                                           "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "id":  "F3V6NoKAZe7EbTFC",
                                                         "name":  "MySQL account"
                                                     }
                                       }
@@ -265,7 +265,7 @@
                                          "operation":  "get",
                                          "dataTableId":  {
                                                              "__rl":  true,
-                                                             "value":  "cICyYfGv0uxhHrPe",
+                                                             "value":  "2eCfdwITFoOj2McE",
                                                              "mode":  "list",
                                                              "cachedResultName":  "Inventory"
                                                          },
@@ -308,7 +308,7 @@
                                          "operation":  "upsert",
                                          "dataTableId":  {
                                                              "__rl":  true,
-                                                             "value":  "cICyYfGv0uxhHrPe",
+                                                             "value":  "2eCfdwITFoOj2McE",
                                                              "mode":  "list",
                                                              "cachedResultName":  "Inventory"
                                                          },

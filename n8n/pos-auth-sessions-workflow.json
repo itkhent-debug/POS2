@@ -1,5 +1,5 @@
 ﻿{
-    "active":  false,
+    "active":  true,
     "name":  "POS Auth Sessions",
     "connections":  {
                         "Session Log Webhook":  {
@@ -66,22 +66,23 @@
                                                  }
                     },
     "settings":  {
-                     "executionOrder":  "v1"
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
                  },
     "nodes":  [
                   {
                       "parameters":  {
                                          "content":  "## Setup\n1. Sa 2 Redis node dito, i-click Credential dropdown → Create New:\n   Host: mist-turn-trusting-68944.db.redis.io\n   Port: 13743\n   Password: yWSgSEb6KsetFMHhBz4B9gHJWNj9FoI3\n   User: default\n   SSL/TLS: OFF (huwag i-check)\n2. Activate.\n\nAudit-log lang ito — HINDI ito ang gate ng login. Kahit magkaproblema ang Redis, gagana pa rin ang normal na login sa POS/Dashboard.",
-                                         "height":  260,
-                                         "width":  380
+                                         "height":  324,
+                                         "width":  412
                                      },
                       "id":  "note-node",
                       "name":  "Setup Notes",
                       "type":  "n8n-nodes-base.stickyNote",
                       "typeVersion":  1,
                       "position":  [
-                                       -500,
-                                       -100
+                                       -576,
+                                       -224
                                    ]
                   },
                   {
@@ -112,7 +113,7 @@
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -180,
+                                       -176,
                                        160
                                    ]
                   },
@@ -122,7 +123,8 @@
                                                             "options":  {
                                                                             "caseSensitive":  true,
                                                                             "leftValue":  "",
-                                                                            "typeValidation":  "loose"
+                                                                            "typeValidation":  "loose",
+                                                                            "version":  1
                                                                         },
                                                             "conditions":  [
                                                                                {
@@ -146,7 +148,7 @@
                       "type":  "n8n-nodes-base.if",
                       "typeVersion":  2,
                       "position":  [
-                                       40,
+                                       48,
                                        160
                                    ]
                   },
@@ -163,12 +165,12 @@
                       "type":  "n8n-nodes-base.redis",
                       "typeVersion":  1,
                       "position":  [
-                                       260,
+                                       272,
                                        80
                                    ],
                       "credentials":  {
                                           "redis":  {
-                                                        "id":  "KH6c11hbmGfZ0AHq",
+                                                        "id":  "aiet3ecoktVPdmxt",
                                                         "name":  "Redis account"
                                                     }
                                       }
@@ -183,12 +185,12 @@
                       "type":  "n8n-nodes-base.redis",
                       "typeVersion":  1,
                       "position":  [
-                                       260,
-                                       260
+                                       272,
+                                       272
                                    ],
                       "credentials":  {
                                           "redis":  {
-                                                        "id":  "KH6c11hbmGfZ0AHq",
+                                                        "id":  "aiet3ecoktVPdmxt",
                                                         "name":  "Redis account"
                                                     }
                                       }

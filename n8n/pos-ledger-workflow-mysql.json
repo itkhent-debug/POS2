@@ -131,8 +131,7 @@
                                                   }
                     },
     "settings":  {
-                     "executionOrder":  "v1",
-                     "binaryMode":  "separate"
+                     "executionOrder":  "v1"
                  },
     "nodes":  [
                   {
@@ -213,8 +212,8 @@
                   },
                   {
                       "parameters":  {
-                                         "query":  "=INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, \u0027{{$json.Day}}\u0027, \u0027{{$json.Date}}\u0027, \u0027{{$json.Time}}\u0027, \u0027{{$json.Customer.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.Items.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, \u0027{{$json.PaymentMethod}}\u0027, \u0027{{$json.OrderType}}\u0027, \u0027{{ ($json.Note || \"\") .replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, \u0027{{$json.Staff.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027)",
                                          "operation":  "executeQuery",
+                                         "query":  "INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, \u0027{{$json.Day}}\u0027, \u0027{{$json.Date}}\u0027, \u0027{{$json.Time}}\u0027, \u0027{{$json.Customer.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.Items.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, \u0027{{$json.PaymentMethod}}\u0027, \u0027{{$json.OrderType}}\u0027, \u0027{{ ($json.Note || \"\") .replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, \u0027{{$json.Staff.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027)",
                                          "options":  {
 
                                                      }
@@ -229,7 +228,7 @@
                                    ],
                       "credentials":  {
                                           "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "id":  "F3V6NoKAZe7EbTFC",
                                                         "name":  "MySQL account"
                                                     }
                                       }
@@ -249,8 +248,8 @@
                   },
                   {
                       "parameters":  {
-                                         "query":  "=INSERT INTO customers (name, last_visit_day, last_visit_date, last_visit_time, last_order_total, last_payment_method, last_order_type) VALUES (\u0027{{$json.Name.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.LastVisitDay}}\u0027, \u0027{{$json.LastVisitDate}}\u0027, \u0027{{$json.LastVisitTime}}\u0027, {{$json.LastOrderTotal}}, \u0027{{$json.LastPaymentMethod}}\u0027, \u0027{{$json.LastOrderType}}\u0027) ON DUPLICATE KEY UPDATE last_visit_day=VALUES(last_visit_day), last_visit_date=VALUES(last_visit_date), last_visit_time=VALUES(last_visit_time), last_order_total=VALUES(last_order_total), last_payment_method=VALUES(last_payment_method), last_order_type=VALUES(last_order_type)",
                                          "operation":  "executeQuery",
+                                         "query":  "INSERT INTO customers (name, last_visit_day, last_visit_date, last_visit_time, last_order_total, last_payment_method, last_order_type) VALUES (\u0027{{$json.Name.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.LastVisitDay}}\u0027, \u0027{{$json.LastVisitDate}}\u0027, \u0027{{$json.LastVisitTime}}\u0027, {{$json.LastOrderTotal}}, \u0027{{$json.LastPaymentMethod}}\u0027, \u0027{{$json.LastOrderType}}\u0027) ON DUPLICATE KEY UPDATE last_visit_day=VALUES(last_visit_day), last_visit_date=VALUES(last_visit_date), last_visit_time=VALUES(last_visit_time), last_order_total=VALUES(last_order_total), last_payment_method=VALUES(last_payment_method), last_order_type=VALUES(last_order_type)",
                                          "options":  {
 
                                                      }
@@ -265,7 +264,7 @@
                                    ],
                       "credentials":  {
                                           "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "id":  "F3V6NoKAZe7EbTFC",
                                                         "name":  "MySQL account"
                                                     }
                                       }
@@ -383,34 +382,34 @@
                                    ]
                   },
                   {
-                      "id":  "select-orders-mysql",
-                      "name":  "Select Orders (MySQL)",
-                      "type":  "n8n-nodes-base.mySql",
-                      "typeVersion":  2.4,
                       "parameters":  {
-                                         "query":  "SELECT * FROM orders ORDER BY id DESC",
                                          "operation":  "executeQuery",
+                                         "query":  "SELECT * FROM orders ORDER BY id DESC",
                                          "options":  {
 
                                                      }
                                      },
+                      "id":  "select-orders-mysql",
+                      "name":  "Select Orders (MySQL)",
+                      "type":  "n8n-nodes-base.mySql",
+                      "typeVersion":  2.4,
                       "position":  [
                                        -144,
                                        672
                                    ],
+                      "alwaysOutputData":  true,
                       "credentials":  {
                                           "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "id":  "F3V6NoKAZe7EbTFC",
                                                         "name":  "MySQL account"
                                                     }
-                                      },
-                      "alwaysOutputData":  true
+                                      }
                   },
                   {
                       "parameters":  {
                                          "dataTableId":  {
                                                              "__rl":  true,
-                                                             "value":  "jkYRizTmnOWtO4Yh",
+                                                             "value":  "fGBwgT6hQN2VQYRa",
                                                              "mode":  "list",
                                                              "cachedResultName":  "Orders"
                                                          },
@@ -563,8 +562,8 @@
                       "type":  "n8n-nodes-base.dataTable",
                       "typeVersion":  1,
                       "position":  [
-                                       822,
-                                       60
+                                       800,
+                                       -128
                                    ],
                       "continueOnFail":  true
                   },
@@ -573,7 +572,7 @@
                                          "operation":  "upsert",
                                          "dataTableId":  {
                                                              "__rl":  true,
-                                                             "value":  "R64nLssTmeP66nf9",
+                                                             "value":  "KPwr7cYPYHO4nAGD",
                                                              "mode":  "list",
                                                              "cachedResultName":  "Customers"
                                                          },
@@ -662,7 +661,7 @@
                       "type":  "n8n-nodes-base.dataTable",
                       "typeVersion":  1,
                       "position":  [
-                                       1130,
+                                       1136,
                                        320
                                    ],
                       "continueOnFail":  true
