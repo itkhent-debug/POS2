@@ -1,5 +1,5 @@
 ﻿{
-    "active":  false,
+    "active":  true,
     "name":  "POS Reset Data",
     "connections":  {
                         "Reset Data Webhook":  {
@@ -50,46 +50,13 @@
                                                       "main":  [
                                                                    [
                                                                        {
-                                                                           "node":  "Clear Sheet: Ledger",
+                                                                           "node":  "Respond Reset",
                                                                            "type":  "main",
                                                                            "index":  0
                                                                        }
                                                                    ]
                                                                ]
-                                                  },
-                        "Clear Sheet: Ledger":  {
-                                                    "main":  [
-                                                                 [
-                                                                     {
-                                                                         "node":  "Clear Sheet: Backup Ledger",
-                                                                         "type":  "main",
-                                                                         "index":  0
-                                                                     }
-                                                                 ]
-                                                             ]
-                                                },
-                        "Clear Sheet: Backup Ledger":  {
-                                                           "main":  [
-                                                                        [
-                                                                            {
-                                                                                "node":  "Clear Sheet: Customers",
-                                                                                "type":  "main",
-                                                                                "index":  0
-                                                                            }
-                                                                        ]
-                                                                    ]
-                                                       },
-                        "Clear Sheet: Customers":  {
-                                                       "main":  [
-                                                                    [
-                                                                        {
-                                                                            "node":  "Respond Reset",
-                                                                            "type":  "main",
-                                                                            "index":  0
-                                                                        }
-                                                                    ]
-                                                                ]
-                                                   }
+                                                  }
                     },
     "settings":  {
                      "executionOrder":  "v1"
@@ -219,105 +186,6 @@
                                                         "id":  "UH7qjOTKWMdfbJAJ",
                                                         "name":  "MySQL account"
                                                     }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "resource":  "sheet",
-                                         "operation":  "clear",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1hphbw2OXPi2Mq0RVtauzbfG9YmfQvx8EBRFkzXmplC4",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "clear-sheet-ledger",
-                      "name":  "Clear Sheet: Ledger",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       700,
-                                       200
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "resource":  "sheet",
-                                         "operation":  "clear",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1ykV0fyiakd60YV2j_1AgBkX0cHhcTp5ggeNg1G-CeUg",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "clear-sheet-backup",
-                      "name":  "Clear Sheet: Backup Ledger",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       920,
-                                       200
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
-                                      }
-                  },
-                  {
-                      "parameters":  {
-                                         "resource":  "sheet",
-                                         "operation":  "clear",
-                                         "documentId":  {
-                                                            "__rl":  true,
-                                                            "value":  "1hv-xA7ONxYLrqkva3AtOU50Sg5hgL7FwH7zHpqsrrB0",
-                                                            "mode":  "id"
-                                                        },
-                                         "sheetName":  {
-                                                           "__rl":  true,
-                                                           "value":  "0",
-                                                           "mode":  "id"
-                                                       },
-                                         "options":  {
-
-                                                     }
-                                     },
-                      "id":  "clear-sheet-customers",
-                      "name":  "Clear Sheet: Customers",
-                      "type":  "n8n-nodes-base.googleSheets",
-                      "typeVersion":  4.5,
-                      "position":  [
-                                       1140,
-                                       200
-                                   ],
-                      "credentials":  {
-                                          "googleSheetsOAuth2Api":  {
-                                                                        "id":  "wsK7bOamMoj6CB8H",
-                                                                        "name":  "Google Sheets account"
-                                                                    }
                                       }
                   },
                   {

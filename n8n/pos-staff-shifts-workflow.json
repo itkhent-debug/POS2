@@ -1,5 +1,5 @@
 ﻿{
-    "active":  false,
+    "active":  true,
     "name":  "POS Staff Shifts",
     "connections":  {
                         "Clock In Webhook":  {
@@ -18,6 +18,11 @@
                                                              [
                                                                  {
                                                                      "node":  "Insert Shift (MySQL)",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Backup Shift In",
                                                                      "type":  "main",
                                                                      "index":  0
                                                                  }
@@ -51,6 +56,11 @@
                                                               [
                                                                   {
                                                                       "node":  "Close Shift (MySQL)",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  },
+                                                                  {
+                                                                      "node":  "Backup Shift Out",
                                                                       "type":  "main",
                                                                       "index":  0
                                                                   }
@@ -337,6 +347,215 @@
                                        160,
                                        540
                                    ]
+                  },
+                  {
+                      "parameters":  {
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "TIvtTR1entwj3cYJ",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Shifts"
+                                                         },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "staffName":  "={{ $json.StaffName }}",
+                                                                       "dayIn":  "={{ $json.Day }}",
+                                                                       "dateIn":  "={{ $json.Date }}",
+                                                                       "timeIn":  "={{ $json.Time }}",
+                                                                       "timeInTs":  "={{ $json.Ts }}",
+                                                                       "status":  "active",
+                                                                       "dayOut":  "",
+                                                                       "dateOut":  "",
+                                                                       "timeOut":  "",
+                                                                       "timeOutTs":  ""
+                                                                   },
+                                                         "matchingColumns":  [
+
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "staffName",
+                                                                            "displayName":  "staffName",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dayIn",
+                                                                            "displayName":  "dayIn",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dateIn",
+                                                                            "displayName":  "dateIn",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeIn",
+                                                                            "displayName":  "timeIn",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeInTs",
+                                                                            "displayName":  "timeInTs",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "status",
+                                                                            "displayName":  "status",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dayOut",
+                                                                            "displayName":  "dayOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dateOut",
+                                                                            "displayName":  "dateOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeOut",
+                                                                            "displayName":  "timeOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeOutTs",
+                                                                            "displayName":  "timeOutTs",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-shift-in",
+                      "name":  "Backup Shift In",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -60,
+                                       220
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "upsert",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "TIvtTR1entwj3cYJ",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Shifts"
+                                                         },
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "staffName",
+                                                                                "keyValue":  "={{ $json.StaffName }}"
+                                                                            },
+                                                                            {
+                                                                                "keyName":  "status",
+                                                                                "keyValue":  "active"
+                                                                            }
+                                                                        ]
+                                                     },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "staffName":  "={{ $json.StaffName }}",
+                                                                       "dayOut":  "={{ $json.Day }}",
+                                                                       "dateOut":  "={{ $json.Date }}",
+                                                                       "timeOut":  "={{ $json.Time }}",
+                                                                       "timeOutTs":  "={{ $json.Ts }}",
+                                                                       "status":  "closed"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "staffName"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "staffName",
+                                                                            "displayName":  "staffName",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dayOut",
+                                                                            "displayName":  "dayOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "dateOut",
+                                                                            "displayName":  "dateOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeOut",
+                                                                            "displayName":  "timeOut",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "timeOutTs",
+                                                                            "displayName":  "timeOutTs",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "status",
+                                                                            "displayName":  "status",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-shift-out",
+                      "name":  "Backup Shift Out",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -60,
+                                       440
+                                   ],
+                      "continueOnFail":  true
                   }
               ]
 }

@@ -1,5 +1,5 @@
 ﻿{
-    "active":  false,
+    "active":  true,
     "name":  "POS Inventory",
     "connections":  {
                         "Get Inventory Webhook":  {
@@ -53,6 +53,11 @@
                                                                  "node":  "Upsert Item (MySQL)",
                                                                  "type":  "main",
                                                                  "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Backup Lookup Item",
+                                                                 "type":  "main",
+                                                                 "index":  0
                                                              }
                                                          ]
                                                      ]
@@ -67,7 +72,29 @@
                                                                      }
                                                                  ]
                                                              ]
-                                                }
+                                                },
+                        "Backup Lookup Item":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Backup Compute Quantity",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Backup Compute Quantity":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Backup Upsert Item",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    }
                     },
     "settings":  {
                      "executionOrder":  "v1"
@@ -232,6 +259,140 @@
                                        272,
                                        400
                                    ]
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "get",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "cICyYfGv0uxhHrPe",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Inventory"
+                                                         },
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "itemName",
+                                                                                "keyValue":  "={{ $json.Name }}"
+                                                                            }
+                                                                        ]
+                                                     }
+                                     },
+                      "id":  "backup-lookup-item",
+                      "name":  "Backup Lookup Item",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -176,
+                                       560
+                                   ],
+                      "alwaysOutputData":  true,
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const cur = $input.first().json.quantity || 0;\nconst f = $(\u0027Format Item\u0027).item.json;\nreturn [{ json: {\n  Name: f.Name,\n  Category: f.Category,\n  Unit: f.Unit,\n  LowStockThreshold: f.LowStockThreshold,\n  NewQuantity: cur + f.QuantityDelta\n} }];"
+                                     },
+                      "id":  "backup-compute-qty",
+                      "name":  "Backup Compute Quantity",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       48,
+                                       560
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "upsert",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "cICyYfGv0uxhHrPe",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Inventory"
+                                                         },
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "itemName",
+                                                                                "keyValue":  "={{ $json.Name }}"
+                                                                            }
+                                                                        ]
+                                                     },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "itemName":  "={{ $json.Name }}",
+                                                                       "category":  "={{ $json.Category }}",
+                                                                       "quantity":  "={{ $json.NewQuantity }}",
+                                                                       "unit":  "={{ $json.Unit }}",
+                                                                       "lowStockThreshold":  "={{ $json.LowStockThreshold }}",
+                                                                       "lastUpdated":  "={{ $now.format(\u0027yyyy-MM-dd HH:mm:ss\u0027) }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "itemName"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "itemName",
+                                                                            "displayName":  "itemName",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "category",
+                                                                            "displayName":  "category",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "quantity",
+                                                                            "displayName":  "quantity",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "unit",
+                                                                            "displayName":  "unit",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lowStockThreshold",
+                                                                            "displayName":  "lowStockThreshold",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastUpdated",
+                                                                            "displayName":  "lastUpdated",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-upsert-item",
+                      "name":  "Backup Upsert Item",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       272,
+                                       560
+                                   ],
+                      "continueOnFail":  true
                   }
               ]
 }

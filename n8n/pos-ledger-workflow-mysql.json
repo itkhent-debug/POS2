@@ -1,5 +1,5 @@
 ﻿{
-    "active":  false,
+    "active":  true,
     "name":  "POS Ledger \u0026 CRM (Auto Headers + MySQL)",
     "connections":  {
                         "POS Order Webhook":  {
@@ -82,6 +82,11 @@
                                                                   "node":  "Insert Order (MySQL)",
                                                                   "type":  "main",
                                                                   "index":  0
+                                                              },
+                                                              {
+                                                                  "node":  "Backup Order (DataTable)",
+                                                                  "type":  "main",
+                                                                  "index":  0
                                                               }
                                                           ]
                                                       ]
@@ -91,6 +96,11 @@
                                                              [
                                                                  {
                                                                      "node":  "Upsert Customer (MySQL)",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Backup Customer (DataTable)",
                                                                      "type":  "main",
                                                                      "index":  0
                                                                  }
@@ -203,8 +213,8 @@
                   },
                   {
                       "parameters":  {
+                                         "query":  "=INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, \u0027{{$json.Day}}\u0027, \u0027{{$json.Date}}\u0027, \u0027{{$json.Time}}\u0027, \u0027{{$json.Customer.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.Items.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, \u0027{{$json.PaymentMethod}}\u0027, \u0027{{$json.OrderType}}\u0027, \u0027{{ ($json.Note || \"\") .replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, \u0027{{$json.Staff.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027)",
                                          "operation":  "executeQuery",
-                                         "query":  "INSERT INTO orders (order_number, day, date, time, customer, items, subtotal, discount, tax, total, cost, profit, payment_method, order_type, note, staff) VALUES ({{$json.OrderNumber}}, \u0027{{$json.Day}}\u0027, \u0027{{$json.Date}}\u0027, \u0027{{$json.Time}}\u0027, \u0027{{$json.Customer.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.Items.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, {{$json.Subtotal}}, {{$json.Discount}}, {{$json.Tax}}, {{$json.Total}}, {{$json.Cost}}, {{$json.Profit}}, \u0027{{$json.PaymentMethod}}\u0027, \u0027{{$json.OrderType}}\u0027, \u0027{{ ($json.Note || \"\").replace(/\u0027/g, \"\u0027\u0027\") }}\u0027, \u0027{{$json.Staff.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027)",
                                          "options":  {
 
                                                      }
@@ -239,8 +249,8 @@
                   },
                   {
                       "parameters":  {
+                                         "query":  "=INSERT INTO customers (name, last_visit_day, last_visit_date, last_visit_time, last_order_total, last_payment_method, last_order_type) VALUES (\u0027{{$json.Name.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.LastVisitDay}}\u0027, \u0027{{$json.LastVisitDate}}\u0027, \u0027{{$json.LastVisitTime}}\u0027, {{$json.LastOrderTotal}}, \u0027{{$json.LastPaymentMethod}}\u0027, \u0027{{$json.LastOrderType}}\u0027) ON DUPLICATE KEY UPDATE last_visit_day=VALUES(last_visit_day), last_visit_date=VALUES(last_visit_date), last_visit_time=VALUES(last_visit_time), last_order_total=VALUES(last_order_total), last_payment_method=VALUES(last_payment_method), last_order_type=VALUES(last_order_type)",
                                          "operation":  "executeQuery",
-                                         "query":  "INSERT INTO customers (name, last_visit_day, last_visit_date, last_visit_time, last_order_total, last_payment_method, last_order_type) VALUES (\u0027{{$json.Name.replace(/\u0027/g, \"\u0027\u0027\")}}\u0027, \u0027{{$json.LastVisitDay}}\u0027, \u0027{{$json.LastVisitDate}}\u0027, \u0027{{$json.LastVisitTime}}\u0027, {{$json.LastOrderTotal}}, \u0027{{$json.LastPaymentMethod}}\u0027, \u0027{{$json.LastOrderType}}\u0027) ON DUPLICATE KEY UPDATE last_visit_day=VALUES(last_visit_day), last_visit_date=VALUES(last_visit_date), last_visit_time=VALUES(last_visit_time), last_order_total=VALUES(last_order_total), last_payment_method=VALUES(last_payment_method), last_order_type=VALUES(last_order_type)",
                                          "options":  {
 
                                                      }
@@ -344,7 +354,7 @@
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "const rows = $input.all().map(item =\u003e item.json).filter(r =\u003e r.id);\n\nconst orders = rows.map(r =\u003e ({\n  orderNumber: r.order_number,\n  day: r.day,\n  date: r.date,\n  time: r.time,\n  customer: r.customer,\n  items: r.items,\n  subtotal: Number(r.subtotal) || 0,\n  discount: Number(r.discount) || 0,\n  tax: Number(r.tax) || 0,\n  total: Number(r.total) || 0,\n  cost: Number(r.cost) || 0,\n  profit: Number(r.profit) || 0,\n  paymentMethod: r.payment_method,\n  orderType: r.order_type,\n  note: r.note,\n  staff: r.staff,\n  month: (r.date || \u0027\u0027).slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
+                                         "jsCode":  "const rows = $input.all().map(item =\u003e item.json).filter(r =\u003e r.order_number);\n\nconst orders = rows.map(r =\u003e ({\n  orderNumber: r.order_number,\n  day: r.day,\n  date: r.date,\n  time: r.time,\n  customer: r.customer,\n  items: r.items,\n  subtotal: Number(r.subtotal) || 0,\n  discount: Number(r.discount) || 0,\n  tax: Number(r.tax) || 0,\n  total: Number(r.total) || 0,\n  cost: Number(r.cost) || 0,\n  profit: Number(r.profit) || 0,\n  paymentMethod: r.payment_method,\n  orderType: r.order_type,\n  note: r.note,\n  staff: r.staff,\n  month: (r.date || \u0027\u0027).slice(0, 7)\n}));\n\nreturn [{ json: { success: true, count: orders.length, orders } }];"
                                      },
                       "id":  "shape-response",
                       "name":  "Shape Response",
@@ -373,16 +383,9 @@
                                    ]
                   },
                   {
-                      "alwaysOutputData":  true,
                       "id":  "select-orders-mysql",
                       "name":  "Select Orders (MySQL)",
                       "type":  "n8n-nodes-base.mySql",
-                      "credentials":  {
-                                          "mySql":  {
-                                                        "id":  "UH7qjOTKWMdfbJAJ",
-                                                        "name":  "MySQL account"
-                                                    }
-                                      },
                       "typeVersion":  2.4,
                       "parameters":  {
                                          "query":  "SELECT * FROM orders ORDER BY id DESC",
@@ -394,7 +397,275 @@
                       "position":  [
                                        -144,
                                        672
-                                   ]
+                                   ],
+                      "credentials":  {
+                                          "mySql":  {
+                                                        "id":  "UH7qjOTKWMdfbJAJ",
+                                                        "name":  "MySQL account"
+                                                    }
+                                      },
+                      "alwaysOutputData":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "jkYRizTmnOWtO4Yh",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Orders"
+                                                         },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "orderNumber":  "={{ $json.OrderNumber }}",
+                                                                       "day":  "={{ $json.Day }}",
+                                                                       "date":  "={{ $json.Date }}",
+                                                                       "time":  "={{ $json.Time }}",
+                                                                       "customer":  "={{ $json.Customer }}",
+                                                                       "items":  "={{ $json.Items }}",
+                                                                       "subtotal":  "={{ $json.Subtotal }}",
+                                                                       "discount":  "={{ $json.Discount }}",
+                                                                       "tax":  "={{ $json.Tax }}",
+                                                                       "total":  "={{ $json.Total }}",
+                                                                       "cost":  "={{ $json.Cost }}",
+                                                                       "profit":  "={{ $json.Profit }}",
+                                                                       "paymentMethod":  "={{ $json.PaymentMethod }}",
+                                                                       "orderType":  "={{ $json.OrderType }}",
+                                                                       "note":  "={{ $json.Note }}",
+                                                                       "staff":  "={{ $json.Staff }}"
+                                                                   },
+                                                         "matchingColumns":  [
+
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "orderNumber",
+                                                                            "displayName":  "orderNumber",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "day",
+                                                                            "displayName":  "day",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "date",
+                                                                            "displayName":  "date",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "time",
+                                                                            "displayName":  "time",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "customer",
+                                                                            "displayName":  "customer",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "items",
+                                                                            "displayName":  "items",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "subtotal",
+                                                                            "displayName":  "subtotal",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "discount",
+                                                                            "displayName":  "discount",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "tax",
+                                                                            "displayName":  "tax",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "total",
+                                                                            "displayName":  "total",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "cost",
+                                                                            "displayName":  "cost",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "profit",
+                                                                            "displayName":  "profit",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "paymentMethod",
+                                                                            "displayName":  "paymentMethod",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "orderType",
+                                                                            "displayName":  "orderType",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "note",
+                                                                            "displayName":  "note",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "staff",
+                                                                            "displayName":  "staff",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-order-dt",
+                      "name":  "Backup Order (DataTable)",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       822,
+                                       60
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "upsert",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "R64nLssTmeP66nf9",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "Customers"
+                                                         },
+                                         "filters":  {
+                                                         "conditions":  [
+                                                                            {
+                                                                                "keyName":  "custName",
+                                                                                "keyValue":  "={{ $json.Name }}"
+                                                                            }
+                                                                        ]
+                                                     },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "custName":  "={{ $json.Name }}",
+                                                                       "lastVisitDay":  "={{ $json.LastVisitDay }}",
+                                                                       "lastVisitDate":  "={{ $json.LastVisitDate }}",
+                                                                       "lastVisitTime":  "={{ $json.LastVisitTime }}",
+                                                                       "lastOrderTotal":  "={{ $json.LastOrderTotal }}",
+                                                                       "lastPaymentMethod":  "={{ $json.LastPaymentMethod }}",
+                                                                       "lastOrderType":  "={{ $json.LastOrderType }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "custName"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "custName",
+                                                                            "displayName":  "custName",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastVisitDay",
+                                                                            "displayName":  "lastVisitDay",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastVisitDate",
+                                                                            "displayName":  "lastVisitDate",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastVisitTime",
+                                                                            "displayName":  "lastVisitTime",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastOrderTotal",
+                                                                            "displayName":  "lastOrderTotal",
+                                                                            "type":  "number",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastPaymentMethod",
+                                                                            "displayName":  "lastPaymentMethod",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        },
+                                                                        {
+                                                                            "id":  "lastOrderType",
+                                                                            "displayName":  "lastOrderType",
+                                                                            "type":  "string",
+                                                                            "display":  true,
+                                                                            "removed":  false
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-customer-dt",
+                      "name":  "Backup Customer (DataTable)",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1130,
+                                       320
+                                   ],
+                      "continueOnFail":  true
                   }
               ]
 }
