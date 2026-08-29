@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Download,
@@ -119,7 +119,7 @@ function LoginScreen({ onLogin }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••••"
               className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -134,7 +134,7 @@ function LoginScreen({ onLogin }) {
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-400 mt-5">Â© {new Date().getFullYear()} Cafe Brewm. Internal use only.</p>
+        <p className="text-center text-xs text-slate-400 mt-5">© {new Date().getFullYear()} Cafe Brewm. Internal use only.</p>
       </div>
     </div>
   );
@@ -232,7 +232,7 @@ function InventoryTab() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400">Loading inventoryâ€¦</td>
+                  <td colSpan={6} className="text-center py-10 text-slate-400">Loading inventory…</td>
                 </tr>
               )}
               {!loading && error && (
@@ -340,7 +340,7 @@ function InventoryTab() {
                 disabled={saving}
                 className="w-full rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium py-2.5 transition-colors mt-2"
               >
-                {saving ? "Savingâ€¦" : "Save"}
+                {saving ? "Saving…" : "Save"}
               </button>
             </form>
           </div>
@@ -477,7 +477,7 @@ function StaffTab() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-400">Loading staff recordsâ€¦</td>
+                  <td colSpan={8} className="text-center py-10 text-slate-400">Loading staff records…</td>
                 </tr>
               )}
               {!loading && error && (
@@ -499,7 +499,7 @@ function StaffTab() {
                     <td className="px-4 py-2.5 font-medium text-slate-800">{s.staffName}</td>
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{s.dayIn}, {s.dateIn} {s.timeIn}</td>
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">
-                      {s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "â€”"}
+                      {s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "—"}
                     </td>
                     <td className="px-3 py-2.5">
                       {s.status === "active" ? (
@@ -513,8 +513,8 @@ function StaffTab() {
                       )}
                     </td>
                     <td className="px-3 py-2.5 font-mono-num text-slate-900">{s.orderCount}</td>
-                    <td className="px-3 py-2.5 font-mono-num text-slate-900">â‚±{peso(s.totalSales)}</td>
-                    <td className="px-3 py-2.5 font-mono-num text-emerald-600">â‚±{peso(s.totalProfit)}</td>
+                    <td className="px-3 py-2.5 font-mono-num text-slate-900">₱{peso(s.totalSales)}</td>
+                    <td className="px-3 py-2.5 font-mono-num text-emerald-600">₱{peso(s.totalProfit)}</td>
                     <td className="px-3 py-2.5">
                       <button
                         onClick={() => downloadPdf(s)}
@@ -867,7 +867,7 @@ export default function LedgerDashboard() {
               {resetLoading ? (
                 <div className="text-center py-4">
                   <RefreshCw className="h-8 w-8 mx-auto mb-4 text-slate-900 animate-spin" />
-                  <p className="text-sm font-medium text-slate-900 mb-1">Gumagawa ng backup PDF at nililinis ang dataâ€¦</p>
+                  <p className="text-sm font-medium text-slate-900 mb-1">Gumagawa ng backup PDF at nililinis ang data…</p>
                   <p className="text-xs text-slate-400">Huwag isara ang tab na ito.</p>
                 </div>
               ) : (
@@ -877,7 +877,7 @@ export default function LedgerDashboard() {
                     <h3 className="text-base font-semibold">Reset lahat ng data?</h3>
                   </div>
                   <p className="text-sm text-slate-600 mb-4">
-                    Permanenteng mabubura ang <strong>lahat</strong> ng orders, customers, staff shifts, at inventory â€” sa Google Sheets AT MySQL. Awtomatikong gagawa muna ng backup PDF bago ito magpatuloy. Hindi na maibabalik ito pagkatapos.
+                    Permanenteng mabubura ang <strong>lahat</strong> ng orders, customers, staff shifts, at inventory — sa Google Sheets AT MySQL. Awtomatikong gagawa muna ng backup PDF bago ito magpatuloy. Hindi na maibabalik ito pagkatapos.
                   </p>
                   {resetError && <p className="text-sm text-rose-600 mb-3">{resetError}</p>}
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">
@@ -956,7 +956,7 @@ export default function LedgerDashboard() {
             <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
               <TrendingUp className="h-3.5 w-3.5" /> Revenue
             </div>
-            <p className="font-mono-num text-xl font-semibold text-emerald-600">â‚±{peso(summary.revenue)}</p>
+            <p className="font-mono-num text-xl font-semibold text-emerald-600">₱{peso(summary.revenue)}</p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
@@ -964,10 +964,10 @@ export default function LedgerDashboard() {
               Est. Profit
             </div>
             <p className={`font-mono-num text-xl font-semibold ${summary.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {summary.profit >= 0 ? "" : "-"}â‚±{peso(Math.abs(summary.profit))}
+              {summary.profit >= 0 ? "" : "-"}₱{peso(Math.abs(summary.profit))}
             </p>
             <p className={`text-[11px] font-medium mt-0.5 ${summary.profit >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-              {summary.profit >= 0 ? "Kumita âœ“" : "Nalugi âš "}
+              {summary.profit >= 0 ? "Kumita ✓" : "Nalugi ⚠"}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -986,13 +986,13 @@ export default function LedgerDashboard() {
             <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
               <Wallet className="h-3.5 w-3.5" /> Avg order
             </div>
-            <p className="font-mono-num text-xl font-semibold text-slate-900">â‚±{peso(summary.avg)}</p>
+            <p className="font-mono-num text-xl font-semibold text-slate-900">₱{peso(summary.avg)}</p>
           </div>
         </div>
 
         {/* Top products donut */}
         <div className="rounded-lg border border-slate-200 bg-white p-5 mb-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">Top-selling items {selectedMonth !== "All" ? `â€” ${monthLabel(selectedMonth)}` : ""}</h2>
+          <h2 className="text-sm font-semibold text-slate-700 mb-4">Top-selling items {selectedMonth !== "All" ? `— ${monthLabel(selectedMonth)}` : ""}</h2>
           {topProducts.length === 0 ? (
             <p className="text-sm text-slate-400 py-6 text-center">Walang data pa para sa donut chart.</p>
           ) : (
@@ -1102,7 +1102,7 @@ export default function LedgerDashboard() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search ordersâ€¦"
+              placeholder="Search orders…"
               className="w-64 rounded-md border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </div>
@@ -1114,7 +1114,7 @@ export default function LedgerDashboard() {
               <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-0.5">Computed total</p>
               <p className="text-sm text-slate-700">
                 {selectedStaff === "All" ? "Lahat ng staff" : selectedStaff}
-                {" Â· "}
+                {" · "}
                 {selectedDay === "All" ? "Lahat ng araw" : selectedDay}
               </p>
             </div>
@@ -1125,11 +1125,11 @@ export default function LedgerDashboard() {
               </div>
               <div>
                 <p className="text-[11px] text-slate-500">Sales</p>
-                <p className="font-mono-num text-lg font-semibold text-slate-900">â‚±{peso(summary.revenue)}</p>
+                <p className="font-mono-num text-lg font-semibold text-slate-900">₱{peso(summary.revenue)}</p>
               </div>
               <div>
                 <p className="text-[11px] text-slate-500">Profit</p>
-                <p className="font-mono-num text-lg font-semibold text-emerald-600">â‚±{peso(summary.profit)}</p>
+                <p className="font-mono-num text-lg font-semibold text-emerald-600">₱{peso(summary.profit)}</p>
               </div>
             </div>
           </div>
@@ -1161,7 +1161,7 @@ export default function LedgerDashboard() {
                 {loading && (
                   <tr>
                     <td colSpan={COLUMNS.length + 1} className="text-center py-10 text-slate-400">
-                      Loading ledger dataâ€¦
+                      Loading ledger data…
                     </td>
                   </tr>
                 )}
@@ -1193,14 +1193,14 @@ export default function LedgerDashboard() {
                       </td>
                       <td className="px-3 py-2.5 font-mono-num text-blue-600">#{o.orderNumber}</td>
                       <td className="px-3 py-2.5 font-medium text-slate-800">{o.customer}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{o.staff || "â€”"}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{o.staff || "—"}</td>
                       <td className="px-3 py-2.5 text-slate-500 max-w-[240px] truncate">{o.items}</td>
                       <td className="px-3 py-2.5 text-slate-500 capitalize">{o.paymentMethod}</td>
                       <td className="px-3 py-2.5 text-slate-500">{o.orderType}</td>
                       <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{o.date}</td>
                       <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{o.time}</td>
                       <td className="px-3 py-2.5 font-mono-num font-semibold text-slate-900 whitespace-nowrap">
-                        â‚±{peso(o.total)}
+                        ₱{peso(o.total)}
                       </td>
                     </tr>
                   ))}

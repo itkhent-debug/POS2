@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   Search,
   Plus,
@@ -228,7 +228,7 @@ function StaffLoginScreen({ onLogin }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••••"
               className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
             />
           </div>
@@ -508,7 +508,7 @@ export default function PosApp() {
           @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
         `}</style>
         <div className="w-[320px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
-          <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>ðŸ‘‹</div>
+          <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>👋</div>
           <p className="font-medium text-lg mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Bye, {currentStaff}! Ingat!</p>
           <p className="text-xs text-neutral-400 mb-4">Shift Summary</p>
 
@@ -548,9 +548,9 @@ export default function PosApp() {
         <div className="w-[300px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
           {authPhase === "loading" || authPhase === "loggingout" ? (
             <>
-              <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>â˜•</div>
+              <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>☕</div>
               <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>
-                {authPhase === "loading" ? "Nag-clock inâ€¦" : "Nag-clock outâ€¦"}
+                {authPhase === "loading" ? "Nag-clock in…" : "Nag-clock out…"}
               </p>
               <p className="text-xs text-neutral-500 mb-4">
                 {authPhase === "loading" ? "Sinasave ang time in mo" : "Sinasave ang time out mo"}
@@ -564,7 +564,7 @@ export default function PosApp() {
             </>
           ) : (
             <>
-              <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>â˜•</div>
+              <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>☕</div>
               <p className="font-medium text-lg mb-3" style={{ fontFamily: "'Fraunces', serif" }}>Time In</p>
               <p className="text-2xl font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
               <p className="text-sm text-neutral-500 mt-1">{clockInInfo?.day}, {clockInInfo?.date}</p>
@@ -601,7 +601,7 @@ export default function PosApp() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search productsâ€¦"
+              placeholder="Search products…"
               className="w-full rounded-sm border border-neutral-200 bg-neutral-50 pl-9 pr-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
             />
           </div>
@@ -693,7 +693,7 @@ export default function PosApp() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search productsâ€¦"
+            placeholder="Search products…"
             className="w-full rounded-sm border border-neutral-200 bg-neutral-50 pl-9 pr-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900"
           />
         </div>
@@ -758,7 +758,7 @@ export default function PosApp() {
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Your comment hereâ€¦"
+                placeholder="Your comment here…"
                 className="w-full rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
               />
             </div>
@@ -781,9 +781,9 @@ export default function PosApp() {
                   </div>
                   <p className="font-display text-sm font-medium text-neutral-900 leading-snug">{p.name}</p>
                   <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono-num text-sm font-semibold text-neutral-900">â‚±{money(p.price)}</span>
+                    <span className="font-mono-num text-sm font-semibold text-neutral-900">₱{money(p.price)}</span>
                     {p.originalPrice && (
-                      <span className="font-mono-num text-xs text-neutral-400 line-through">â‚±{money(p.originalPrice)}</span>
+                      <span className="font-mono-num text-xs text-neutral-400 line-through">₱{money(p.originalPrice)}</span>
                     )}
                   </div>
                 </button>
@@ -791,7 +791,7 @@ export default function PosApp() {
             })}
             {filteredProducts.length === 0 && (
               <p className="col-span-full text-sm text-neutral-400 py-10 text-center">
-                No products match â€œ{query}â€.
+                No products match “{query}”.
               </p>
             )}
           </div>
@@ -824,7 +824,7 @@ export default function PosApp() {
               <div key={item.id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-neutral-900 truncate">{item.name}</p>
-                  <p className="font-mono-num text-xs text-neutral-500">â‚±{money(item.price)}</p>
+                  <p className="font-mono-num text-xs text-neutral-500">₱{money(item.price)}</p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
@@ -854,19 +854,19 @@ export default function PosApp() {
           <div className="border-t border-dashed border-neutral-200 pt-3 space-y-1.5 shrink-0">
             <div className="flex justify-between text-sm text-neutral-500">
               <span>Subtotal</span>
-              <span className="font-mono-num">â‚±{money(subtotal)}</span>
+              <span className="font-mono-num">₱{money(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm text-neutral-500">
               <span>Discount {discountPct > 0 ? `(${discountPct}%)` : ""}</span>
-              <span className="font-mono-num">-â‚±{money(discountAmount)}</span>
+              <span className="font-mono-num">-₱{money(discountAmount)}</span>
             </div>
             <div className="flex justify-between text-sm text-neutral-500">
               <span>Tax ({Math.round(TAX_RATE * 100)}%)</span>
-              <span className="font-mono-num">â‚±{money(tax)}</span>
+              <span className="font-mono-num">₱{money(tax)}</span>
             </div>
             <div className="flex justify-between text-base font-semibold pt-1.5 mt-1.5 border-t border-neutral-200">
               <span className="font-display">Total</span>
-              <span className="font-mono-num text-neutral-900">â‚±{money(total)}</span>
+              <span className="font-mono-num text-neutral-900">₱{money(total)}</span>
             </div>
           </div>
 
@@ -901,7 +901,7 @@ export default function PosApp() {
           >
             {orderStatus === "loading" ? (
               <>
-                <RefreshCw className="h-4 w-4 animate-spin" /> Processingâ€¦
+                <RefreshCw className="h-4 w-4 animate-spin" /> Processing…
               </>
             ) : orderStatus === "success" ? (
               <>
@@ -920,7 +920,7 @@ export default function PosApp() {
             {orderStatus === "loading" ? (
               <>
                 <RefreshCw className="mx-auto mb-4 h-8 w-8 text-neutral-900 animate-spin" />
-                <p className="font-display text-base mb-1">Pinoproseso ang orderâ€¦</p>
+                <p className="font-display text-base mb-1">Pinoproseso ang order…</p>
                 <p className="text-xs text-neutral-500 mb-4">Sini-sync sa ledger, CRM, at Slack</p>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
                   <div
@@ -932,7 +932,7 @@ export default function PosApp() {
             ) : (
               <>
                 <div className="mb-3 text-5xl" style={{ animation: "pop 0.5s ease-out" }}>
-                  ðŸŽ‰
+                  🎉
                 </div>
                 <p className="font-display text-lg font-semibold text-neutral-900 mb-1">Order placed!</p>
                 <p className="text-sm text-neutral-500">Salamat sa order!</p>
