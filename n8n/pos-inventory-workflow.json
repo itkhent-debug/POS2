@@ -91,6 +91,11 @@
                                                                              "node":  "Backup Upsert Item",
                                                                              "type":  "main",
                                                                              "index":  0
+                                                                         },
+                                                                         {
+                                                                             "node":  "Backup Item (Supabase)",
+                                                                             "type":  "main",
+                                                                             "index":  0
                                                                          }
                                                                      ]
                                                                  ]
@@ -391,6 +396,44 @@
                       "position":  [
                                        272,
                                        560
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://dugsjhtyyksndmbiooxd.supabase.co/rest/v1/inventory_backup?on_conflict=name",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "resolution=merge-duplicates,return=minimal"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ name: $json.Name, category: $json.Category, quantity: $json.NewQuantity, unit: $json.Unit, low_stock_threshold: $json.LowStockThreshold, last_updated: $now.toISO() }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-item-supabase",
+                      "name":  "Backup Item (Supabase)",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       272,
+                                       700
                                    ],
                       "continueOnFail":  true
                   }

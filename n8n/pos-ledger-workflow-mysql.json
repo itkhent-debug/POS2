@@ -87,6 +87,11 @@
                                                                   "node":  "Backup Order (DataTable)",
                                                                   "type":  "main",
                                                                   "index":  0
+                                                              },
+                                                              {
+                                                                  "node":  "Backup Order (Supabase)",
+                                                                  "type":  "main",
+                                                                  "index":  0
                                                               }
                                                           ]
                                                       ]
@@ -101,6 +106,11 @@
                                                                  },
                                                                  {
                                                                      "node":  "Backup Customer (DataTable)",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Backup Customer (Supabase)",
                                                                      "type":  "main",
                                                                      "index":  0
                                                                  }
@@ -293,7 +303,7 @@
                       "webhookId":  "82efe828-4779-4b72-8d9f-76f051a00123",
                       "credentials":  {
                                           "slackApi":  {
-                                                           "id":  "hj8eroD6bC9yd4GQ",
+                                                           "id":  "Va1y8COvBbWUb9mk",
                                                            "name":  "Slack account"
                                                        }
                                       },
@@ -663,6 +673,82 @@
                       "position":  [
                                        1136,
                                        320
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://dugsjhtyyksndmbiooxd.supabase.co/rest/v1/orders_backup?on_conflict=order_number",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "resolution=merge-duplicates,return=minimal"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ order_number: $json.OrderNumber, day: $json.Day, date: $json.Date, time: $json.Time, customer: $json.Customer, items: $json.Items, subtotal: $json.Subtotal, discount: $json.Discount, tax: $json.Tax, total: $json.Total, cost: $json.Cost, profit: $json.Profit, payment_method: $json.PaymentMethod, order_type: $json.OrderType, note: $json.Note, staff: $json.Staff }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-order-supabase",
+                      "name":  "Backup Order (Supabase)",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       822,
+                                       200
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://dugsjhtyyksndmbiooxd.supabase.co/rest/v1/customers_backup?on_conflict=name",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "resolution=merge-duplicates,return=minimal"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ name: $json.Name, last_visit_day: $json.LastVisitDay, last_visit_date: $json.LastVisitDate, last_visit_time: $json.LastVisitTime, last_order_total: $json.LastOrderTotal, last_payment_method: $json.LastPaymentMethod, last_order_type: $json.LastOrderType }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-customer-supabase",
+                      "name":  "Backup Customer (Supabase)",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       1130,
+                                       440
                                    ],
                       "continueOnFail":  true
                   }

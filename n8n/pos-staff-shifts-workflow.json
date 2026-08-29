@@ -25,6 +25,11 @@
                                                                      "node":  "Backup Shift In",
                                                                      "type":  "main",
                                                                      "index":  0
+                                                                 },
+                                                                 {
+                                                                     "node":  "Backup Shift In (Supabase)",
+                                                                     "type":  "main",
+                                                                     "index":  0
                                                                  }
                                                              ]
                                                          ]
@@ -61,6 +66,11 @@
                                                                   },
                                                                   {
                                                                       "node":  "Backup Shift Out",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  },
+                                                                  {
+                                                                      "node":  "Backup Shift Out (Supabase)",
                                                                       "type":  "main",
                                                                       "index":  0
                                                                   }
@@ -554,6 +564,95 @@
                       "position":  [
                                        -60,
                                        440
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://dugsjhtyyksndmbiooxd.supabase.co/rest/v1/shifts_backup",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=minimal"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ staff_name: $json.StaffName, day_in: $json.Day, date_in: $json.Date, time_in: $json.Time, time_in_ts: $json.Ts, status: \"active\" }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-shift-in-supabase",
+                      "name":  "Backup Shift In (Supabase)",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -60,
+                                       260
+                                   ],
+                      "continueOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "PATCH",
+                                         "url":  "https://dugsjhtyyksndmbiooxd.supabase.co/rest/v1/shifts_backup",
+                                         "sendHeaders":  true,
+                                         "headerParameters":  {
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "apikey",
+                                                                                         "value":  "={{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Authorization",
+                                                                                         "value":  "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+                                                                                     },
+                                                                                     {
+                                                                                         "name":  "Prefer",
+                                                                                         "value":  "return=minimal"
+                                                                                     }
+                                                                                 ]
+                                                              },
+                                         "sendQuery":  true,
+                                         "queryParameters":  {
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "staff_name",
+                                                                                        "value":  "=eq.{{ $json.StaffName }}"
+                                                                                    },
+                                                                                    {
+                                                                                        "name":  "status",
+                                                                                        "value":  "eq.active"
+                                                                                    }
+                                                                                ]
+                                                             },
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ day_out: $json.Day, date_out: $json.Date, time_out: $json.Time, time_out_ts: $json.Ts, status: \"closed\" }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "backup-shift-out-supabase",
+                      "name":  "Backup Shift Out (Supabase)",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -60,
+                                       480
                                    ],
                       "continueOnFail":  true
                   }
