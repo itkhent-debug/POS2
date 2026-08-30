@@ -175,6 +175,11 @@ const PAYMENT_METHODS = [
   { id: "card", label: "Card", icon: CreditCard },
   { id: "wallet", label: "Wallet", icon: Wallet },
 ];
+const SIZE_OPTIONS = [
+  { label: "12oz", extra: 0 },
+  { label: "16oz", extra: 20 },
+  { label: "24oz", extra: 40 },
+];
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
 const N8N_WEBHOOK_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-order";
@@ -366,6 +371,7 @@ export default function PosApp() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [variantModal, setVariantModal] = useState(null); // { product, temp, size }
   const toastTimer = useRef(null);
   const bellTimer = useRef(null);
   const successTimer = useRef(null);
@@ -420,6 +426,19 @@ export default function PosApp() {
 
   function removeItem(id) {
     setCart((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  function confirmVariant() {
+    if (!variantModal) return;
+    const { product, temp, size } = variantModal;
+    const sizeOption = SIZE_OPTIONS.find((s) => s.label === size);
+    const price = product.price + (sizeOption?.extra || 0);
+    addToCart({
+      id: `${product.id}-${temp}-${size}`,
+      name: `${product.name} (${temp}, ${size})`,
+      price,
+    });
+    setVariantModal(null);
   }
 
   function clearCart() {
@@ -767,11 +786,22 @@ export default function PosApp() {
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredProducts.map((p) => {
               const Icon = p.icon;
-              const inCart = cart.find((i) => i.id === p.id);
+              const hasVariants = p.category === "Espresso";
+              const inCart = hasVariants
+                ? cart.some((i) => typeof i.id === "string" && i.id.startsWith(`${p.id}-`))
+                : cart.find((i) => i.id === p.id);
               return (
                 <button
                   key={p.id}
-                  onClick={() => addToCart(p)}
+                  onClick={() => {
+                    if (hasVariants) {
+                      setVariantModal({ product: p, temp: "Hot", size: "12oz" });
+                    } else if (inCart) {
+                      removeItem(p.id);
+                    } else {
+                      addToCart(p);
+                    }
+                  }}
                   className={`text-left bg-white rounded-sm border p-3 transition-all hover:border-neutral-400 ${
                     inCart ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
                   }`}
@@ -913,6 +943,64 @@ export default function PosApp() {
           </button>
         </aside>
       </div>
+
+      {variantModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-xs rounded-sm border border-neutral-200 bg-white px-6 py-6">
+            <p className="font-display text-base font-medium text-neutral-900 mb-4">{variantModal.product.name}</p>
+
+            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Temperature</span>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {["Hot", "Iced"].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setVariantModal((v) => ({ ...v, temp: t }))}
+                  className={`rounded-sm border py-2 text-sm font-medium transition-colors ${
+                    variantModal.temp === t
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Size</span>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {SIZE_OPTIONS.map((s) => (
+                <button
+                  key={s.label}
+                  onClick={() => setVariantModal((v) => ({ ...v, size: s.label }))}
+                  className={`rounded-sm border py-2 text-xs font-medium transition-colors ${
+                    variantModal.size === s.label
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                  }`}
+                >
+                  <div>{s.label}</div>
+                  <div className="font-mono-num">₱{money(variantModal.product.price + s.extra)}</div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setVariantModal(null)}
+                className="flex-1 rounded-sm border border-neutral-200 text-sm font-medium text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmVariant}
+                className="flex-1 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+              >
+                Add to cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {orderStatus !== "idle" && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
