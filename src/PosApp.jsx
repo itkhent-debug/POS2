@@ -7,8 +7,6 @@ import {
   RefreshCw,
   Bell,
   Printer,
-  Wallet,
-  CreditCard,
   Banknote,
   Coffee,
   CupSoda,
@@ -170,11 +168,7 @@ const CATEGORIES = [
   "Waffle",
 ];
 const ORDER_TYPES = ["Pickup", "Delivery", "Dine In"];
-const PAYMENT_METHODS = [
-  { id: "cash", label: "Cash", icon: Banknote },
-  { id: "card", label: "Card", icon: CreditCard },
-  { id: "wallet", label: "Wallet", icon: Wallet },
-];
+const PAYMENT_METHODS = [{ id: "cash", label: "Cash", icon: Banknote }];
 const SIZE_OPTIONS = [
   { label: "12oz", extra: 0 },
   { label: "16oz", extra: 20 },
@@ -363,7 +357,7 @@ export default function PosApp() {
   const [orderType, setOrderType] = useState("Pickup");
   const [discountPct, setDiscountPct] = useState(0);
   const [note, setNote] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [orderNumber, setOrderNumber] = useState(248);
   const [orderStatus, setOrderStatus] = useState("idle"); // idle | loading | success
   const [barActive, setBarActive] = useState(false);
@@ -374,6 +368,9 @@ export default function PosApp() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [variantModal, setVariantModal] = useState(null); // { product, temp, size }
+  const [customItemModal, setCustomItemModal] = useState(false);
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
   const toastTimer = useRef(null);
   const bellTimer = useRef(null);
   const successTimer = useRef(null);
@@ -439,6 +436,16 @@ export default function PosApp() {
     const name = mode === "tempSize" ? `${product.name} (${temp}, ${size})` : `${product.name} (${size})`;
     addToCart({ id, name, price });
     setVariantModal(null);
+  }
+
+  function confirmCustomItem() {
+    const name = customItemName.trim();
+    const price = Number(customItemPrice);
+    if (!name || !(price > 0)) return;
+    addToCart({ id: `custom-${Date.now()}`, name, price });
+    setCustomItemName("");
+    setCustomItemPrice("");
+    setCustomItemModal(false);
   }
 
   function clearCart() {
@@ -633,7 +640,10 @@ export default function PosApp() {
               <Trash2 className="h-4 w-4" />
               <span className="hidden sm:inline">Clear cart</span>
             </button>
-            <button className="flex items-center gap-1.5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium uppercase tracking-wide px-3.5 py-2 transition-colors">
+            <button
+              onClick={() => setCustomItemModal(true)}
+              className="flex items-center gap-1.5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium uppercase tracking-wide px-3.5 py-2 transition-colors"
+            >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add item</span>
             </button>
@@ -906,7 +916,7 @@ export default function PosApp() {
 
           <div className="mt-4 shrink-0">
             <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Payment method</span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const Icon = m.icon;
                 const active = paymentMethod === m.id;
@@ -947,6 +957,52 @@ export default function PosApp() {
           </button>
         </aside>
       </div>
+
+      {customItemModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-xs rounded-sm border border-neutral-200 bg-white px-6 py-6">
+            <p className="font-display text-base font-medium text-neutral-900 mb-4">Add custom item</p>
+
+            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Item name</span>
+            <input
+              value={customItemName}
+              onChange={(e) => setCustomItemName(e.target.value)}
+              placeholder="e.g. Special request"
+              autoFocus
+              className="w-full mb-3 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+            />
+
+            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Price</span>
+            <input
+              type="number"
+              value={customItemPrice}
+              onChange={(e) => setCustomItemPrice(e.target.value)}
+              placeholder="0.00"
+              className="w-full mb-5 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setCustomItemModal(false);
+                  setCustomItemName("");
+                  setCustomItemPrice("");
+                }}
+                className="flex-1 rounded-sm border border-neutral-200 text-sm font-medium text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmCustomItem}
+                disabled={!customItemName.trim() || !(Number(customItemPrice) > 0)}
+                className="flex-1 rounded-sm bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-sm font-medium py-2.5 transition-colors"
+              >
+                Add to cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {variantModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
