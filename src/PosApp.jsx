@@ -180,6 +180,8 @@ const SIZE_OPTIONS = [
   { label: "16oz", extra: 20 },
   { label: "24oz", extra: 40 },
 ];
+const TEMP_SIZE_CATEGORIES = ["Espresso"];
+const SIZE_ONLY_CATEGORIES = ["Milk Tea", "Fruit Tea", "Iced Coffee", "Blended", "Frappe"];
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
 const N8N_WEBHOOK_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-order";
@@ -430,14 +432,12 @@ export default function PosApp() {
 
   function confirmVariant() {
     if (!variantModal) return;
-    const { product, temp, size } = variantModal;
+    const { product, mode, temp, size } = variantModal;
     const sizeOption = SIZE_OPTIONS.find((s) => s.label === size);
     const price = product.price + (sizeOption?.extra || 0);
-    addToCart({
-      id: `${product.id}-${temp}-${size}`,
-      name: `${product.name} (${temp}, ${size})`,
-      price,
-    });
+    const id = mode === "tempSize" ? `${product.id}-${temp}-${size}` : `${product.id}-${size}`;
+    const name = mode === "tempSize" ? `${product.name} (${temp}, ${size})` : `${product.name} (${size})`;
+    addToCart({ id, name, price });
     setVariantModal(null);
   }
 
@@ -786,7 +786,9 @@ export default function PosApp() {
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredProducts.map((p) => {
               const Icon = p.icon;
-              const hasVariants = p.category === "Espresso";
+              const hasTempSize = TEMP_SIZE_CATEGORIES.includes(p.category);
+              const hasSizeOnly = SIZE_ONLY_CATEGORIES.includes(p.category);
+              const hasVariants = hasTempSize || hasSizeOnly;
               const inCart = hasVariants
                 ? cart.some((i) => typeof i.id === "string" && i.id.startsWith(`${p.id}-`))
                 : cart.find((i) => i.id === p.id);
@@ -794,8 +796,10 @@ export default function PosApp() {
                 <button
                   key={p.id}
                   onClick={() => {
-                    if (hasVariants) {
-                      setVariantModal({ product: p, temp: "Hot", size: "12oz" });
+                    if (hasTempSize) {
+                      setVariantModal({ product: p, mode: "tempSize", temp: "Hot", size: "12oz" });
+                    } else if (hasSizeOnly) {
+                      setVariantModal({ product: p, mode: "sizeOnly", size: "12oz" });
                     } else if (inCart) {
                       removeItem(p.id);
                     } else {
@@ -949,22 +953,26 @@ export default function PosApp() {
           <div className="w-full max-w-xs rounded-sm border border-neutral-200 bg-white px-6 py-6">
             <p className="font-display text-base font-medium text-neutral-900 mb-4">{variantModal.product.name}</p>
 
-            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Temperature</span>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {["Hot", "Iced"].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setVariantModal((v) => ({ ...v, temp: t }))}
-                  className={`rounded-sm border py-2 text-sm font-medium transition-colors ${
-                    variantModal.temp === t
-                      ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            {variantModal.mode === "tempSize" && (
+              <>
+                <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Temperature</span>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {["Hot", "Iced"].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setVariantModal((v) => ({ ...v, temp: t }))}
+                      className={`rounded-sm border py-2 text-sm font-medium transition-colors ${
+                        variantModal.temp === t
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Size</span>
             <div className="grid grid-cols-3 gap-2 mb-5">
