@@ -483,10 +483,16 @@ function OverviewTab() {
 function buildBusinessSummary(orders, shifts, inventory) {
   const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const totalProfit = orders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
-  const today = new Date().toISOString().slice(0, 10);
+  // Match the timezone the backend records order dates in (Asia/Manila), not the browser's local/UTC date.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
   const todayOrders = orders.filter((o) => o.date === today);
   const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const todayProfit = todayOrders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
+
+  const mostRecentDate = orders.reduce((max, o) => (o.date && o.date > max ? o.date : max), "");
+  const mostRecentOrders = mostRecentDate ? orders.filter((o) => o.date === mostRecentDate) : [];
+  const mostRecentRevenue = mostRecentOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const mostRecentProfit = mostRecentOrders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
 
   const tally = new Map();
   for (const o of orders) {
@@ -517,6 +523,9 @@ function buildBusinessSummary(orders, shifts, inventory) {
     todayOrders: todayOrders.length,
     todayRevenue: Math.round(todayRevenue * 100) / 100,
     todayProfit: Math.round(todayProfit * 100) / 100,
+    mostRecentDateWithOrders: mostRecentDate || null,
+    mostRecentDateRevenue: Math.round(mostRecentRevenue * 100) / 100,
+    mostRecentDateProfit: Math.round(mostRecentProfit * 100) / 100,
     topProducts,
     salesPerStaff,
     lowStockItems: lowStock.map((it) => ({ name: it.name, quantity: it.quantity, unit: it.unit })),
