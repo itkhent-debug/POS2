@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   LayoutGrid,
   UserCheck,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
@@ -30,6 +32,7 @@ const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
 const SESSION_LOG_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-session-log";
+const AI_ASSISTANT_URL = "https://n8n-production-b0b3.up.railway.app/webhook/ai-assistant";
 
 function logSession(type, name, action, token) {
   fetch(SESSION_LOG_URL, {
@@ -474,6 +477,89 @@ function OverviewTab() {
         )}
       </div>
     </div>
+  );
+}
+
+function FloatingChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function sendMessage() {
+    const text = input.trim();
+    if (!text || sending) return;
+    setMessages((prev) => [...prev, { role: "user", text }]);
+    setInput("");
+    setSending(true);
+    try {
+      const res = await fetch(AI_ASSISTANT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", text: data?.reply || "Walang sagot na natanggap." }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", text: "May error, subukan ulit." }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <>
+      {open && (
+        <div className="fixed bottom-20 right-5 z-50 w-80 h-[420px] rounded-lg border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-900 text-white shrink-0">
+            <span className="text-sm font-semibold">AI Assistant</span>
+            <button onClick={() => setOpen(false)} className="text-slate-300 hover:text-white">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+            {messages.length === 0 && (
+              <p className="text-xs text-slate-400 text-center mt-6">Magtanong ka kung ano man. Powered by Gemini.</p>
+            )}
+            {messages.map((m, idx) => (
+              <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                    m.role === "user" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-800"
+                  }`}
+                >
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {sending && <p className="text-xs text-slate-400">Nag-iisip pa si AI…</p>}
+          </div>
+          <div className="flex items-center gap-2 px-3 py-3 border-t border-slate-200 shrink-0">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Type a message…"
+              className="flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || sending}
+              className="h-9 w-9 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white flex items-center justify-center transition-colors"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-slate-900 hover:bg-black text-white flex items-center justify-center shadow-lg transition-colors"
+      >
+        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
+      </button>
+    </>
   );
 }
 
@@ -1641,6 +1727,8 @@ export default function LedgerDashboard() {
         </>
         )}
       </div>
+
+      <FloatingChatWidget />
     </div>
   );
 }

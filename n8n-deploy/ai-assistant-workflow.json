@@ -1,0 +1,138 @@
+﻿{
+    "active":  true,
+    "name":  "AI Assistant (Gemini)",
+    "connections":  {
+                        "Chat Webhook":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Format Input",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Format Input":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Call Gemini",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         },
+                        "Call Gemini":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Shape Reply",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        },
+                        "Shape Reply":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Respond",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 },
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "ai-assistant",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+                                                         "allowedOrigins":  "*"
+                                                     }
+                                     },
+                      "id":  "027ea02a-a2b3-4ae1-9b73-d7ed61ad0eae",
+                      "name":  "Chat Webhook",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       144,
+                                       384
+                                   ],
+                      "webhookId":  "ai-assistant"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const body = $input.first().json.body ?? $input.first().json;\nreturn [{\n  json: {\n    userMessage: body.message || \u0027\u0027\n  }\n}];"
+                                     },
+                      "id":  "d14cb97c-ee8a-451b-8a7a-5d9e9d73aff1",
+                      "name":  "Format Input",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       368,
+                                       384
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.userMessage } ] } ] }) }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "fd4feced-a07c-4759-bb79-0ca112fabcd6",
+                      "name":  "Call Gemini",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       592,
+                                       384
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const data = $input.first().json;\nconst reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || \u0027Sorry, walang sagot na na-generate.\u0027;\nreturn [{ json: { reply } }];"
+                                     },
+                      "id":  "969ebec9-eed1-4c12-a30f-7d06e929ff36",
+                      "name":  "Shape Reply",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       816,
+                                       384
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ $json }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "9c164b7c-86c3-43b8-b655-4e9edaabc127",
+                      "name":  "Respond",
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       1024,
+                                       384
+                                   ]
+                  }
+              ]
+}
