@@ -480,6 +480,50 @@ function OverviewTab() {
   );
 }
 
+function buildBusinessSummary(orders, shifts, inventory) {
+  const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const totalProfit = orders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((o) => o.date === today);
+  const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const todayProfit = todayOrders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
+
+  const tally = new Map();
+  for (const o of orders) {
+    for (const it of parseItems(o.items)) {
+      tally.set(it.name, (tally.get(it.name) || 0) + it.qty);
+    }
+  }
+  const topProducts = Array.from(tally.entries())
+    .map(([name, qty]) => ({ name, qty }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+
+  const staffTally = new Map();
+  for (const o of orders) {
+    const key = o.staff || "Unknown";
+    staffTally.set(key, (staffTally.get(key) || 0) + (Number(o.total) || 0));
+  }
+  const salesPerStaff = Array.from(staffTally.entries()).map(([name, total]) => ({ name, total }));
+
+  const lowStock = inventory.filter((it) => Number(it.quantity) <= Number(it.lowStockThreshold));
+  const onDuty = shifts.filter((s) => s.status === "active").map((s) => s.staffName);
+
+  return {
+    todayDate: today,
+    totalOrders: orders.length,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalProfit: Math.round(totalProfit * 100) / 100,
+    todayOrders: todayOrders.length,
+    todayRevenue: Math.round(todayRevenue * 100) / 100,
+    todayProfit: Math.round(todayProfit * 100) / 100,
+    topProducts,
+    salesPerStaff,
+    lowStockItems: lowStock.map((it) => ({ name: it.name, quantity: it.quantity, unit: it.unit })),
+    staffOnDuty: onDuty,
+  };
+}
+
 function FloatingChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -493,10 +537,21 @@ function FloatingChatWidget() {
     setInput("");
     setSending(true);
     try {
+      const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
+        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+      ]);
+      const summary = buildBusinessSummary(
+        Array.isArray(ordersRes.orders) ? ordersRes.orders : [],
+        Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : [],
+        Array.isArray(inventoryRes.items) ? inventoryRes.items : []
+      );
+
       const res = await fetch(AI_ASSISTANT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, context: summary }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "assistant", text: data?.reply || "Walang sagot na natanggap." }]);
@@ -519,7 +574,9 @@ function FloatingChatWidget() {
           </div>
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
             {messages.length === 0 && (
-              <p className="text-xs text-slate-400 text-center mt-6">Magtanong ka kung ano man. Powered by Gemini.</p>
+              <p className="text-xs text-slate-400 text-center mt-6">
+                Magtanong tungkol sa sales, profit, staff, o inventory mo. Halimbawa: "Magkano kita ko ngayon?"
+              </p>
             )}
             {messages.map((m, idx) => (
               <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>

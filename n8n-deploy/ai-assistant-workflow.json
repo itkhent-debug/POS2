@@ -73,7 +73,7 @@
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "const body = $input.first().json.body ?? $input.first().json;\nreturn [{\n  json: {\n    userMessage: body.message || \u0027\u0027\n  }\n}];"
+                                         "jsCode":  "const body = $input.first().json.body ?? $input.first().json;\nconst message = body.message || \u0027\u0027;\nconst context = body.context || null;\n\nlet prompt = message;\nif (context) {\n  prompt = `Ikaw ay AI assistant para sa Cafe Brewm, isang coffee shop. Narito ang kasalukuyang totoong business data (JSON):\n${JSON.stringify(context)}\n\nGamitin ang datos sa itaas kung may kinalaman sa tanong (sales, kita/profit, staff, inventory, atbp.). Sagutin nang maikli, malinaw, at friendly (Taglish ok). Kung hindi related sa datos ang tanong, sagutin na lang normally.\n\nTanong: ${message}`;\n}\n\nreturn [{ json: { prompt } }];"
                                      },
                       "id":  "d14cb97c-ee8a-451b-8a7a-5d9e9d73aff1",
                       "name":  "Format Input",
@@ -90,7 +90,7 @@
                                          "url":  "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
                                          "sendBody":  true,
                                          "specifyBody":  "json",
-                                         "jsonBody":  "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.userMessage } ] } ] }) }}",
+                                         "jsonBody":  "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.prompt } ] } ] }) }}",
                                          "options":  {
 
                                                      }
