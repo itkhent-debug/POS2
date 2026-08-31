@@ -81,8 +81,8 @@
                       "type":  "n8n-nodes-base.stickyNote",
                       "typeVersion":  1,
                       "position":  [
-                                       -576,
-                                       -224
+                                       -592,
+                                       -256
                                    ]
                   },
                   {
@@ -123,7 +123,7 @@
                                                             "options":  {
                                                                             "caseSensitive":  true,
                                                                             "leftValue":  "",
-                                                                            "typeValidation":  "loose",
+                                                                            "typeValidation":  "strict",
                                                                             "version":  1
                                                                         },
                                                             "conditions":  [
