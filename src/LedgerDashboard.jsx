@@ -20,6 +20,13 @@ import {
   UserCheck,
   MessageCircle,
   Send,
+  Lock,
+  User,
+  Coffee,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
@@ -42,7 +49,8 @@ function logSession(type, name, action, token) {
   }).catch(() => {});
 }
 
-const DONUT_COLORS = ["#C9A24B", "#7A2E2E", "#3B82F6", "#8A9A82", "#F59E0B", "#94A3B8"];
+// Sophisticated modern color palette for charts & breakdowns
+const DONUT_COLORS = ["#18181b", "#b45309", "#059669", "#2563eb", "#7c3aed", "#d97706", "#e11d48", "#64748b"];
 
 function peso(n) {
   return (Number(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -74,7 +82,7 @@ const COLUMNS = [
   { key: "staff", label: "Staff" },
   { key: "items", label: "Items" },
   { key: "paymentMethod", label: "Payment" },
-  { key: "orderType", label: "Order type" },
+  { key: "orderType", label: "Order Type" },
   { key: "date", label: "Date" },
   { key: "time", label: "Time" },
   { key: "total", label: "Total" },
@@ -87,51 +95,59 @@ function MiniDonut({ data, centerValue, centerLabel }) {
   let cumulative = 0;
 
   return (
-    <div className="flex items-center gap-5">
-      <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0">
-        <g transform="rotate(-90 60 60)">
-          {total === 0 ? (
-            <circle cx="60" cy="60" r={r} fill="none" stroke="#E2E8F0" strokeWidth="16" />
-          ) : (
-            data.map((d) => {
-              const pct = (d.value / total) * 100;
-              const dash = (pct / 100) * circumference;
-              const el = (
-                <circle
-                  key={d.name}
-                  cx="60"
-                  cy="60"
-                  r={r}
-                  fill="none"
-                  stroke={d.color}
-                  strokeWidth="16"
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={-((cumulative / 100) * circumference)}
-                />
-              );
-              cumulative += pct;
-              return el;
-            })
-          )}
-        </g>
-        <text x="60" y="56" textAnchor="middle" className="fill-slate-900" style={{ fontSize: 17, fontWeight: 700 }}>
-          {centerValue}
-        </text>
-        <text x="60" y="72" textAnchor="middle" className="fill-slate-400" style={{ fontSize: 8 }}>
-          {centerLabel}
-        </text>
-      </svg>
-      <div className="flex-1 space-y-1.5 min-w-0">
+    <div className="flex flex-col sm:flex-row items-center gap-6">
+      <div className="relative shrink-0 flex items-center justify-center">
+        <svg width="124" height="124" viewBox="0 0 120 120">
+          <g transform="rotate(-90 60 60)">
+            {total === 0 ? (
+              <circle cx="60" cy="60" r={r} fill="none" stroke="#f4f4f5" strokeWidth="15" />
+            ) : (
+              data.map((d) => {
+                const pct = (d.value / total) * 100;
+                const dash = (pct / 100) * circumference;
+                const el = (
+                  <circle
+                    key={d.name}
+                    cx="60"
+                    cy="60"
+                    r={r}
+                    fill="none"
+                    stroke={d.color}
+                    strokeWidth="15"
+                    strokeDasharray={`${dash} ${circumference - dash}`}
+                    strokeDashoffset={-((cumulative / 100) * circumference)}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                );
+                cumulative += pct;
+                return el;
+              })
+            )}
+          </g>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+          <span className="font-mono-num text-sm font-bold text-neutral-900 tracking-tight">{centerValue}</span>
+          {centerLabel && <span className="text-[10px] uppercase font-semibold tracking-wider text-neutral-400">{centerLabel}</span>}
+        </div>
+      </div>
+
+      <div className="flex-1 w-full space-y-2">
         {data.map((d) => (
-          <div key={d.name} className="flex items-center gap-2 text-xs">
-            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-            <span className="text-slate-600 truncate flex-1">{d.name}</span>
-            <span className="font-mono-num text-slate-500 shrink-0">
-              {total ? ((d.value / total) * 100).toFixed(0) : 0}%
-            </span>
+          <div key={d.name} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 truncate">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+              <span className="text-neutral-600 font-medium truncate">{d.name}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="font-mono-num font-semibold text-neutral-800">{d.value}</span>
+              <span className="text-[11px] text-neutral-400 w-8 text-right font-mono-num">
+                {total ? ((d.value / total) * 100).toFixed(0) : 0}%
+              </span>
+            </div>
           </div>
         ))}
-        {data.length === 0 && <p className="text-xs text-slate-400">No data yet</p>}
+        {data.length === 0 && <p className="text-xs text-neutral-400 py-3 text-center">No data yet</p>}
       </div>
     </div>
   );
@@ -139,13 +155,13 @@ function MiniDonut({ data, centerValue, centerLabel }) {
 
 function SalesTrendChart({ data }) {
   const width = 640;
-  const height = 200;
-  const padding = 24;
+  const height = 180;
+  const padding = 20;
   const max = Math.max(1, ...data.map((d) => d.revenue));
 
   const points = data.map((d, idx) => {
     const x = data.length > 1 ? padding + (idx / (data.length - 1)) * (width - padding * 2) : width / 2;
-    const y = height - padding - (d.revenue / max) * (height - padding * 2);
+    const y = height - padding - (d.revenue / max) * (height - padding * 2.2);
     return { x, y };
   });
 
@@ -156,47 +172,51 @@ function SalesTrendChart({ data }) {
       : "";
 
   if (data.length === 0) {
-    return <p className="text-sm text-slate-400 py-16 text-center">No sales data yet.</p>;
+    return <p className="text-sm text-neutral-400 py-14 text-center">No sales data yet.</p>;
   }
 
   if (data.length === 1) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <p className="font-mono-num text-3xl font-semibold text-slate-900">₱{peso(data[0].revenue)}</p>
-        <p className="text-xs text-slate-500 mt-1">Total sales for {data[0].label}</p>
-        <p className="text-xs text-slate-400 mt-3">
-          The trend chart will appear once there's sales data from 2+ different days.
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <p className="font-mono-num text-2xl font-bold text-neutral-900">₱{peso(data[0].revenue)}</p>
+        <p className="text-xs text-neutral-500 mt-1 font-medium">Total sales for {data[0].label}</p>
+        <p className="text-xs text-neutral-400 mt-2">
+          Trend graph activates automatically as more days are logged.
         </p>
       </div>
     );
   }
 
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="salesTrendGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#C9A24B" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#C9A24B" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {areaPath && <path d={areaPath} fill="url(#salesTrendGradient)" />}
-      <path d={linePath} fill="none" stroke="#C9A24B" strokeWidth="2.5" />
-      {points.map((p, idx) => (
-        <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#C9A24B" />
-      ))}
-      {data.map((d, idx) => (
-        <text
-          key={d.date}
-          x={points[idx].x}
-          y={height - 6}
-          textAnchor="middle"
-          className="fill-slate-400"
-          style={{ fontSize: 9 }}
-        >
-          {d.label}
-        </text>
-      ))}
-    </svg>
+    <div className="w-full overflow-hidden">
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="overflow-visible">
+        <defs>
+          <linearGradient id="salesTrendGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#18181b" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#18181b" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        {areaPath && <path d={areaPath} fill="url(#salesTrendGradient)" />}
+        <path d={linePath} fill="none" stroke="#18181b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((p, idx) => (
+          <g key={idx}>
+            <circle cx={p.x} cy={p.y} r="4" fill="#ffffff" stroke="#18181b" strokeWidth="2" />
+          </g>
+        ))}
+        {data.map((d, idx) => (
+          <text
+            key={d.date}
+            x={points[idx].x}
+            y={height - 2}
+            textAnchor="middle"
+            className="fill-neutral-400 font-mono-num"
+            style={{ fontSize: 9, fontWeight: 500 }}
+          >
+            {d.label}
+          </text>
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -226,17 +246,6 @@ function OverviewTab() {
     load();
   }, []);
 
-  const paymentBreakdown = useMemo(() => {
-    const tally = new Map();
-    for (const o of orders) {
-      const key = (o.paymentMethod || "Other").trim() || "Other";
-      tally.set(key, (tally.get(key) || 0) + 1);
-    }
-    return Array.from(tally.entries())
-      .map(([name, value], idx) => ({ name, value, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
-      .sort((a, b) => b.value - a.value);
-  }, [orders]);
-
   const orderTypeBreakdown = useMemo(() => {
     const tally = new Map();
     for (const o of orders) {
@@ -261,8 +270,8 @@ function OverviewTab() {
       else newCustomers += 1;
     }
     return [
-      { name: "New customer", value: newCustomers, color: DONUT_COLORS[0] },
-      { name: "Returning customer", value: returning, color: DONUT_COLORS[1] },
+      { name: "New Customers", value: newCustomers, color: "#18181b" },
+      { name: "Returning", value: returning, color: "#b45309" },
     ];
   }, [orders]);
 
@@ -302,60 +311,48 @@ function OverviewTab() {
       if (!o.date) continue;
       tally.set(o.date, (tally.get(o.date) || 0) + (Number(o.total) || 0));
     }
-    const sorted = Array.from(tally.entries()).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-    const last = sorted.slice(-14);
-    return last.map(([date, revenue]) => {
-      const [, m, d] = date.split("-");
-      return { date, revenue, label: `${m}/${d}` };
+    const sortedDates = Array.from(tally.keys()).sort();
+    return sortedDates.slice(-7).map((d) => {
+      const parts = d.split("-");
+      const label = parts.length === 3 ? `${parts[1]}/${parts[2]}` : d;
+      return { date: d, label, revenue: tally.get(d) };
     });
   }, [orders]);
 
   const recentCustomers = useMemo(() => {
-    const seen = new Set();
-    const list = [];
-    for (const o of orders) {
-      const name = o.customer || "Guest";
-      if (seen.has(name)) continue;
-      seen.add(name);
-      list.push(o);
-      if (list.length >= 6) break;
-    }
-    return list;
+    return [...orders].slice(-6).reverse();
   }, [orders]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">Overview of all operations</p>
-        <button
-          onClick={load}
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
-      </div>
-
-      {/* Sales trend + payment donut row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales Trend (last 14 days with orders)</h3>
-          <SalesTrendChart data={salesTrend} />
+    <div className="space-y-5 animate-fade-in">
+      {/* Top row: Sales trend */}
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-900 tracking-tight">Sales Trend (Last 7 Active Days)</h3>
+            <p className="text-xs text-neutral-400">Daily gross revenue trajectory</p>
+          </div>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="text-neutral-400 hover:text-neutral-800 transition-colors p-1 rounded-lg"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Payment Method</h3>
-          <MiniDonut data={paymentBreakdown} centerValue={orders.length} centerLabel="orders" />
-        </div>
+        <SalesTrendChart data={salesTrend} />
       </div>
 
       {/* Donut row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Order Type</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-1">Order Types Breakdown</h3>
+          <p className="text-xs text-neutral-400 mb-4">Dine-in vs. Take-out distributions</p>
           <MiniDonut data={orderTypeBreakdown} centerValue={orders.length} centerLabel="orders" />
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">New vs Returning Customer</h3>
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-1">Customer Retention</h3>
+          <p className="text-xs text-neutral-400 mb-4">New vs. Returning customer ratio</p>
           <MiniDonut
             data={customerBreakdown}
             centerValue={`${customerBreakdown[1] ? Math.round((customerBreakdown[1].value / Math.max(1, customerBreakdown[0].value + customerBreakdown[1].value)) * 100) : 0}%`}
@@ -365,40 +362,41 @@ function OverviewTab() {
       </div>
 
       {/* Funnel + stage distribution row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Weekly Order Volume</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-1">Weekly Order Volume</h3>
+          <p className="text-xs text-neutral-400 mb-4">Orders count by day of week</p>
           <div className="space-y-2.5">
             {weeklyVolume.map((d) => (
               <div key={d.day} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-20 shrink-0">{d.day}</span>
-                <div className="flex-1 h-5 rounded-md bg-slate-100 overflow-hidden">
+                <span className="text-xs font-medium text-neutral-500 w-24 shrink-0">{d.day}</span>
+                <div className="flex-1 h-4 rounded-full bg-neutral-100 overflow-hidden">
                   <div
-                    className="h-full rounded-md flex items-center justify-end px-2 transition-all"
-                    style={{ width: `${Math.max(d.pct, d.count ? 8 : 0)}%`, backgroundColor: "#C9A24B" }}
-                  >
-                    {d.count > 0 && <span className="text-[10px] font-semibold text-white">{d.count}</span>}
-                  </div>
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(d.pct, d.count ? 10 : 0)}%`, backgroundColor: "#18181b" }}
+                  />
                 </div>
+                <span className="font-mono-num text-xs font-semibold text-neutral-700 w-10 text-right shrink-0">{d.count}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Sales per Staff</h3>
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-1">Sales by Staff</h3>
+          <p className="text-xs text-neutral-400 mb-4">Revenue handled per barista/cashier</p>
           <div className="space-y-2.5">
-            {staffSales.length === 0 && <p className="text-sm text-slate-400 py-6 text-center">No data yet.</p>}
+            {staffSales.length === 0 && <p className="text-xs text-neutral-400 py-8 text-center">No records logged yet.</p>}
             {staffSales.map((s) => (
               <div key={s.name} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-20 shrink-0 truncate">{s.name}</span>
-                <div className="flex-1 h-5 rounded-md bg-slate-100 overflow-hidden">
+                <span className="text-xs font-medium text-neutral-600 w-24 shrink-0 truncate">{s.name}</span>
+                <div className="flex-1 h-4 rounded-full bg-neutral-100 overflow-hidden">
                   <div
-                    className="h-full rounded-md"
-                    style={{ width: `${Math.max(s.pct, 4)}%`, backgroundColor: s.color }}
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(s.pct, 6)}%`, backgroundColor: s.color }}
                   />
                 </div>
-                <span className="font-mono-num text-xs text-slate-600 w-20 text-right shrink-0">₱{peso(s.total)}</span>
+                <span className="font-mono-num text-xs font-semibold text-neutral-900 w-24 text-right shrink-0">₱{peso(s.total)}</span>
               </div>
             ))}
           </div>
@@ -407,21 +405,31 @@ function OverviewTab() {
 
       {/* Actions + tasks row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-rose-500" /> Low Stock Alerts
-          </h3>
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Low Stock Alerts
+            </h3>
+            {lowStockItems.length > 0 && (
+              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-600 border border-rose-100">
+                {lowStockItems.length} items
+              </span>
+            )}
+          </div>
           {lowStockItems.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">No low stock right now. 🎉</p>
+            <div className="rounded-xl border border-dashed border-neutral-200 py-8 text-center">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto mb-2" />
+              <p className="text-xs font-medium text-neutral-600">All inventory items are adequately stocked</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
               {lowStockItems.map((it) => (
-                <div key={it.name} className="flex items-center justify-between rounded-md bg-rose-50 px-3 py-2.5">
+                <div key={it.name} className="flex items-center justify-between rounded-xl bg-amber-50/60 border border-amber-100/80 px-3.5 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{it.name}</p>
-                    <p className="text-xs text-slate-500">{it.category}</p>
+                    <p className="text-xs font-semibold text-neutral-900">{it.name}</p>
+                    <p className="text-[11px] text-neutral-500">{it.category}</p>
                   </div>
-                  <span className="font-mono-num text-sm font-semibold text-rose-600">
+                  <span className="font-mono-num text-xs font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">
                     {it.quantity} {it.unit} left
                   </span>
                 </div>
@@ -430,21 +438,34 @@ function OverviewTab() {
           )}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-            <UserCheck className="h-4 w-4 text-emerald-500" /> Staff On Duty
-          </h3>
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-emerald-600" /> Staff Currently On Duty
+            </h3>
+            {onDuty.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-100">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {onDuty.length} Active
+              </span>
+            )}
+          </div>
           {onDuty.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">No one clocked in right now.</p>
+            <div className="rounded-xl border border-dashed border-neutral-200 py-8 text-center">
+              <Clock className="h-5 w-5 text-neutral-400 mx-auto mb-2" />
+              <p className="text-xs font-medium text-neutral-500">No staff members clocked in right now.</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
               {onDuty.map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2.5">
+                <div key={s.id} className="flex items-center justify-between rounded-xl bg-emerald-50/60 border border-emerald-100/80 px-3.5 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{s.staffName}</p>
-                    <p className="text-xs text-slate-500">Time in: {s.timeIn}</p>
+                    <p className="text-xs font-semibold text-neutral-900">{s.staffName}</p>
+                    <p className="text-[11px] text-neutral-500">Clocked in: {s.timeIn}</p>
                   </div>
-                  <span className="font-mono-num text-sm font-semibold text-emerald-600">{s.orderCount} orders</span>
+                  <span className="font-mono-num text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                    {s.orderCount} orders
+                  </span>
                 </div>
               ))}
             </div>
@@ -452,25 +473,29 @@ function OverviewTab() {
         </div>
       </div>
 
-      {/* Recent customers */}
-      <div className="rounded-lg border border-slate-200 bg-white p-5 mt-4">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-          <Users className="h-4 w-4 text-slate-400" /> Recent Customers
-        </h3>
+      {/* Recent Orders Cards */}
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-1">Recent Activity</h3>
+        <p className="text-xs text-neutral-400 mb-4">Latest transactions completed</p>
         {recentCustomers.length === 0 ? (
-          <p className="text-sm text-slate-400 py-6 text-center">No customers yet.</p>
+          <p className="text-xs text-neutral-400 py-8 text-center">No orders recorded yet.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {recentCustomers.map((o) => (
-              <div key={o.customer + o.date + o.time} className="rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="h-7 w-7 rounded-full bg-[#C9A24B] text-white text-xs font-semibold flex items-center justify-center shrink-0">
+              <div key={o.orderNumber + o.date + o.time} className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 hover:border-neutral-300 transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="h-7 w-7 rounded-full bg-neutral-900 text-white text-xs font-semibold flex items-center justify-center shrink-0">
                     {(o.customer || "G").charAt(0).toUpperCase()}
                   </span>
-                  <p className="text-sm font-medium text-slate-800 truncate">{o.customer || "Guest"}</p>
+                  <div className="truncate">
+                    <p className="text-xs font-semibold text-neutral-900 truncate">{o.customer || "Guest"}</p>
+                    <p className="text-[10px] text-neutral-400">#{o.orderNumber}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500">{o.date} · {o.time}</p>
-                <p className="font-mono-num text-xs font-semibold text-slate-700 mt-1">₱{peso(o.total)}</p>
+                <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-neutral-200/60">
+                  <span className="text-[10px] text-neutral-400">{o.time}</span>
+                  <span className="font-mono-num text-xs font-bold text-neutral-900">₱{peso(o.total)}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -483,7 +508,6 @@ function OverviewTab() {
 function buildBusinessSummary(orders, shifts, inventory) {
   const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const totalProfit = orders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
-  // Match the timezone the backend records order dates in (Asia/Manila), not the browser's local/UTC date.
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
   const todayOrders = orders.filter((o) => o.date === today);
   const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
@@ -524,8 +548,8 @@ function buildBusinessSummary(orders, shifts, inventory) {
     todayRevenue: Math.round(todayRevenue * 100) / 100,
     todayProfit: Math.round(todayProfit * 100) / 100,
     mostRecentDateWithOrders: mostRecentDate || null,
-    mostRecentDateRevenue: Math.round(mostRecentRevenue * 100) / 100,
-    mostRecentDateProfit: Math.round(mostRecentProfit * 100) / 100,
+    mostRecentDateRevenue: Math.round(mostRecentDateRevenue * 100) / 100,
+    mostRecentDateProfit: Math.round(mostRecentDateProfit * 100) / 100,
     topProducts,
     salesPerStaff,
     lowStockItems: lowStock.map((it) => ({ name: it.name, quantity: it.quantity, unit: it.unit })),
@@ -539,8 +563,8 @@ function FloatingChatWidget() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
-  async function sendMessage() {
-    const text = input.trim();
+  async function sendMessage(textToSend) {
+    const text = (textToSend || input).trim();
     if (!text || sending) return;
     setMessages((prev) => [...prev, { role: "user", text }]);
     setInput("");
@@ -574,56 +598,96 @@ function FloatingChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-20 right-5 z-50 w-80 h-[420px] rounded-lg border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-900 text-white shrink-0">
-            <span className="text-sm font-semibold">AI Assistant</span>
-            <button onClick={() => setOpen(false)} className="text-slate-300 hover:text-white">
+        <div className="fixed bottom-20 right-5 z-50 w-88 max-w-[calc(100vw-2.5rem)] h-[480px] rounded-3xl border border-neutral-200/90 bg-white/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden animate-pop">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-neutral-100 bg-neutral-900 text-white shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold tracking-tight leading-tight">Brewm AI Assistant</h4>
+                <p className="text-[10px] text-neutral-400">Business analytics helper</p>
+              </div>
+            </div>
+            <button onClick={() => setOpen(false)} className="text-neutral-400 hover:text-white p-1 rounded-lg">
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+
+          {/* Messages body */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
             {messages.length === 0 && (
-              <p className="text-xs text-slate-400 text-center mt-6">
-                Magtanong tungkol sa sales, profit, staff, o inventory mo. Halimbawa: "Magkano kita ko ngayon?"
-              </p>
+              <div className="text-center py-6">
+                <div className="h-10 w-10 mx-auto rounded-full bg-amber-50 text-amber-700 flex items-center justify-center mb-3">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-semibold text-neutral-800 mb-1">May maitutulong ako?</p>
+                <p className="text-[11px] text-neutral-400 max-w-[200px] mx-auto mb-4">
+                  Magtanong tungkol sa kita, best sellers, staff shift, o inventory.
+                </p>
+                <div className="flex flex-col gap-1.5 text-left">
+                  {["Magkano kita ko ngayon?", "Anong best seller item?", "Sinong staff ang naka-duty?"].map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => sendMessage(prompt)}
+                      className="text-xs text-neutral-600 hover:text-neutral-900 bg-neutral-100/70 hover:bg-neutral-100 px-3 py-2 rounded-xl transition-colors text-left"
+                    >
+                      "{prompt}"
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             {messages.map((m, idx) => (
               <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                    m.role === "user" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-800"
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs whitespace-pre-wrap leading-relaxed ${
+                    m.role === "user" ? "bg-neutral-900 text-white rounded-tr-sm" : "bg-neutral-100 text-neutral-800 rounded-tl-sm"
                   }`}
                 >
                   {m.text}
                 </div>
               </div>
             ))}
-            {sending && <p className="text-xs text-slate-400">Nag-iisip pa si AI…</p>}
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-neutral-100 text-neutral-500 rounded-2xl rounded-tl-sm px-3.5 py-2 text-xs flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 px-3 py-3 border-t border-slate-200 shrink-0">
+
+          {/* Footer input */}
+          <div className="flex items-center gap-2 p-3 border-t border-neutral-100 bg-white shrink-0">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Type a message…"
-              className="flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              placeholder="Ask a question..."
+              className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-xs outline-none focus:border-neutral-900 focus:bg-white transition-all"
             />
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={!input.trim() || sending}
-              className="h-9 w-9 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-200 text-white flex items-center justify-center transition-all shrink-0"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       )}
 
+      {/* Launcher Button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-slate-900 hover:bg-black text-white flex items-center justify-center shadow-lg transition-colors"
+        className="fixed bottom-6 right-6 z-50 h-13 w-13 rounded-full bg-neutral-900 hover:bg-black text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+        title="Open AI Assistant"
       >
-        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
+        {open ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5 text-amber-400" />}
       </button>
     </>
   );
@@ -640,55 +704,84 @@ function LoginScreen({ onLogin }) {
       setError("");
       onLogin();
     } else {
-      setError("Wrong username or password.");
+      setError("Incorrect administrator credentials.");
     }
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#F7F8FA] flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      `}</style>
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-6">
-          <img src={logo} alt="Cafe Brewm" className="h-20 w-20 rounded-full object-cover shadow-sm mb-3" />
-          <h1 className="text-xl font-bold text-slate-900">Cafe Brewm Ledger</h1>
-          <p className="text-sm text-slate-500 mt-1">Admin access only</p>
+    <div className="relative min-h-screen w-full flex items-center justify-center px-4 bg-[#f8f9fa] overflow-hidden">
+      {/* Decorative ambient gradients */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-stone-300/30 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative w-full max-w-sm">
+        {/* Card */}
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/90 backdrop-blur-xl shadow-xl p-8 animate-fade-in">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="relative mb-4">
+              <img
+                src={logo}
+                alt="Cafe Brewm"
+                className="h-16 w-16 rounded-full object-cover ring-4 ring-neutral-100 shadow-sm"
+              />
+              <span className="absolute -bottom-1 -right-1 bg-neutral-900 text-white p-1 rounded-full text-[10px] shadow-sm">
+                <Lock className="h-3 w-3" />
+              </span>
+            </div>
+            <h1 className="font-display text-2xl font-bold text-neutral-900">Cafe Brewm</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full mt-2 border border-amber-200/60">
+              Admin Ledger
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-neutral-600 mb-1.5 block">Admin Username</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="admincaffe"
+                  autoFocus
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-10 pr-3.5 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10 transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-neutral-600 mb-1.5 block">Security Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-10 pr-3.5 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10 transition-all"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200/80 px-3 py-2 text-xs font-medium text-rose-700">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-neutral-900 hover:bg-black text-white text-xs font-semibold uppercase tracking-wider py-3 shadow-md hover:shadow-lg active:scale-[0.99] transition-all"
+            >
+              Sign In to Ledger
+            </button>
+          </form>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-1.5 block">Username</label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admincaffe"
-              autoFocus
-              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-500 mb-1.5 block">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••"
-              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {error && <p className="text-sm text-rose-600">{error}</p>}
-
-          <button
-            type="submit"
-            className="w-full rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 transition-colors"
-          >
-            Log in
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-slate-400 mt-5">© {new Date().getFullYear()} Cafe Brewm. Internal use only.</p>
+        <p className="text-center text-xs text-neutral-400 mt-6 font-medium">
+          © {new Date().getFullYear()} Cafe Brewm • Internal Operations
+        </p>
       </div>
     </div>
   );
@@ -710,7 +803,7 @@ function InventoryTab() {
       const data = await res.json();
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
-      setError("Couldn't load inventory. Check if the n8n workflow is Active.");
+      setError("Couldn't load inventory. Check if the n8n workflow is active.");
     } finally {
       setLoading(false);
     }
@@ -747,57 +840,64 @@ function InventoryTab() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">
-          {items.length} item{items.length !== 1 ? "s" : ""} in stock
-        </p>
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-neutral-900 tracking-tight">Stock & Supplies</h2>
+          <p className="text-xs text-neutral-400">
+            {items.length} trackable item{items.length !== 1 ? "s" : ""} registered
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
-            className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+            className="flex items-center gap-1.5 rounded-xl bg-neutral-900 hover:bg-black text-white text-xs font-semibold px-4 py-2 shadow-sm transition-all"
           >
-            <Plus className="h-4 w-4" />
-            Add / Restock Item
+            <Plus className="h-3.5 w-3.5" />
+            Add / Restock
           </button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="rounded-2xl border border-neutral-200/80 bg-white shadow-subtle overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left px-4 py-2.5 font-medium text-slate-500">Item</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Category</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Quantity</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Unit</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Status</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Last updated</th>
+              <tr className="border-b border-neutral-100 bg-neutral-50/60 text-neutral-400 uppercase tracking-wider font-semibold">
+                <th className="text-left px-5 py-3.5">Item Name</th>
+                <th className="text-left px-4 py-3.5">Category</th>
+                <th className="text-left px-4 py-3.5">Quantity</th>
+                <th className="text-left px-4 py-3.5">Unit</th>
+                <th className="text-left px-4 py-3.5">Status</th>
+                <th className="text-left px-4 py-3.5">Last Updated</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-neutral-100">
               {loading && (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400">Loading inventory…</td>
+                  <td colSpan={6} className="text-center py-12 text-neutral-400">
+                    Loading inventory records...
+                  </td>
                 </tr>
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-rose-500">{error}</td>
+                  <td colSpan={6} className="text-center py-12 text-rose-500 font-medium">
+                    {error}
+                  </td>
                 </tr>
               )}
               {!loading && !error && items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-400">
-                    No stock items yet. Click "Add / Restock Item" to add one.
+                  <td colSpan={6} className="text-center py-12 text-neutral-400">
+                    No items in inventory. Click "Add / Restock" to start.
                   </td>
                 </tr>
               )}
@@ -806,23 +906,27 @@ function InventoryTab() {
                 items.map((it) => {
                   const low = Number(it.quantity) <= Number(it.lowStockThreshold);
                   return (
-                    <tr key={it.name} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-medium text-slate-800">{it.name}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{it.category}</td>
-                      <td className="px-3 py-2.5 font-mono-num text-slate-900">{it.quantity}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{it.unit}</td>
-                      <td className="px-3 py-2.5">
+                    <tr key={it.name} className="hover:bg-neutral-50/60 transition-colors">
+                      <td className="px-5 py-3.5 font-semibold text-neutral-900">{it.name}</td>
+                      <td className="px-4 py-3.5 text-neutral-500 font-medium">{it.category}</td>
+                      <td className="px-4 py-3.5 font-mono-num font-bold text-neutral-900">{it.quantity}</td>
+                      <td className="px-4 py-3.5 text-neutral-500">{it.unit}</td>
+                      <td className="px-4 py-3.5">
                         {low ? (
-                          <span className="inline-flex items-center rounded-full bg-rose-50 text-rose-600 text-xs font-medium px-2 py-0.5">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-semibold px-2.5 py-0.5 border border-rose-200/60">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
                             Low stock
                           </span>
                         ) : (
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium px-2 py-0.5">
-                            OK
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-200/60">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Adequate
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-slate-400 whitespace-nowrap">{it.updatedAt}</td>
+                      <td className="px-4 py-3.5 text-neutral-400 whitespace-nowrap font-mono-num text-[11px]">
+                        {it.updatedAt}
+                      </td>
                     </tr>
                   );
                 })}
@@ -831,71 +935,81 @@ function InventoryTab() {
         </div>
       </div>
 
+      {/* Restock Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-lg p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-fade-in">
+          <div className="w-full max-w-sm rounded-3xl border border-neutral-200 bg-white shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-slate-900">Add / Restock Item</h3>
-              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+              <h3 className="text-base font-bold text-neutral-900 tracking-tight">Add or Restock Supply</h3>
+              <button onClick={() => setModalOpen(false)} className="text-neutral-400 hover:text-neutral-800 p-1">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Item name</label>
+                <label className="text-xs font-semibold text-neutral-600 mb-1 block">Item Name</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Coffee Beans"
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  placeholder="e.g. Espresso Beans"
+                  className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Category</label>
+                <label className="text-xs font-semibold text-neutral-600 mb-1 block">Category</label>
                 <input
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  placeholder="e.g. Raw Materials"
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  placeholder="e.g. Coffee / Dairy / Packaging"
+                  className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Quantity to add</label>
+                  <label className="text-xs font-semibold text-neutral-600 mb-1 block">Quantity Delta</label>
                   <input
                     type="number"
                     value={form.quantity}
                     onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
                     placeholder="e.g. 10"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Unit</label>
+                  <label className="text-xs font-semibold text-neutral-600 mb-1 block">Unit</label>
                   <input
                     value={form.unit}
                     onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
                     placeholder="pcs / kg / L"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Low stock alert when quantity drops below:</label>
+                <label className="text-xs font-semibold text-neutral-600 mb-1 block">Low Stock Alert Threshold</label>
                 <input
                   type="number"
                   value={form.lowStockThreshold}
                   onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
                 />
               </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium py-2.5 transition-colors mt-2"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold py-2.5 hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-300 text-white text-xs font-semibold py-2.5 transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Stock"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -926,7 +1040,7 @@ function StaffTab() {
       const data = await res.json();
       setShifts(Array.isArray(data.shifts) ? data.shifts : []);
     } catch (err) {
-      setError("Couldn't load staff records. Check if the n8n workflow is Active.");
+      setError("Couldn't load staff records. Check if the n8n workflow is active.");
     } finally {
       setLoading(false);
     }
@@ -961,7 +1075,7 @@ function StaffTab() {
         ["Total profit", `P${peso(shift.totalProfit)}`],
       ],
       theme: "grid",
-      headStyles: { fillColor: [30, 41, 59] },
+      headStyles: { fillColor: [24, 24, 27] },
     });
 
     doc.save(`shift-${shift.staffName}-${shift.dateIn}.pdf`);
@@ -992,7 +1106,7 @@ function StaffTab() {
         `P${peso(s.totalProfit)}`,
       ]),
       theme: "grid",
-      headStyles: { fillColor: [30, 41, 59] },
+      headStyles: { fillColor: [24, 24, 27] },
       styles: { fontSize: 8 },
     });
 
@@ -1000,97 +1114,110 @@ function StaffTab() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Timesheet Logs</h2>
-          <p className="text-sm text-slate-500">
-            {shifts.length} shift{shifts.length !== 1 ? "s" : ""} recorded
+          <h2 className="text-base font-bold text-neutral-900 tracking-tight">Staff Attendance & Shifts</h2>
+          <p className="text-xs text-neutral-400">
+            {shifts.length} shift log{shifts.length !== 1 ? "s" : ""} on record
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
-            className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
           <button
             onClick={downloadAllPdf}
             disabled={shifts.length === 0}
-            className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+            className="flex items-center gap-1.5 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-300 text-white text-xs font-semibold px-4 py-2 shadow-sm transition-all"
           >
-            <Download className="h-4 w-4" />
-            Download as PDF
+            <Download className="h-3.5 w-3.5" />
+            Download PDF
           </button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="rounded-2xl border border-neutral-200/80 bg-white shadow-subtle overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left px-4 py-2.5 font-medium text-slate-500">Staff</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time In</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Time Out</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Work Hours</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Status</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Orders</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Sales</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500">Profit</th>
-                <th className="text-left px-3 py-2.5 font-medium text-slate-500"></th>
+              <tr className="border-b border-neutral-100 bg-neutral-50/60 text-neutral-400 uppercase tracking-wider font-semibold">
+                <th className="text-left px-5 py-3.5">Staff Name</th>
+                <th className="text-left px-4 py-3.5">Clock In</th>
+                <th className="text-left px-4 py-3.5">Clock Out</th>
+                <th className="text-left px-4 py-3.5">Hours</th>
+                <th className="text-left px-4 py-3.5">Status</th>
+                <th className="text-left px-4 py-3.5">Orders</th>
+                <th className="text-left px-4 py-3.5">Gross Sales</th>
+                <th className="text-left px-4 py-3.5">Profit</th>
+                <th className="text-right px-5 py-3.5">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-neutral-100">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-slate-400">Loading staff records…</td>
+                  <td colSpan={9} className="text-center py-12 text-neutral-400">
+                    Loading staff records...
+                  </td>
                 </tr>
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-rose-500">{error}</td>
+                  <td colSpan={9} className="text-center py-12 text-rose-500 font-medium">
+                    {error}
+                  </td>
                 </tr>
               )}
               {!loading && !error && shifts.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-slate-400">
-                    No shift records yet. Staff need to log in on the POS to start tracking.
+                  <td colSpan={9} className="text-center py-12 text-neutral-400">
+                    No shift records found. Staff clock-in on the POS will show up here.
                   </td>
                 </tr>
               )}
               {!loading &&
                 !error &&
                 shifts.map((s) => (
-                  <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-2.5 font-medium text-slate-800">{s.staffName}</td>
-                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{s.dayIn}, {s.dateIn} {s.timeIn}</td>
-                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">
-                      {s.timeOut ? `${s.dayOut}, ${s.dateOut} ${s.timeOut}` : "—"}
+                  <tr key={s.id} className="hover:bg-neutral-50/60 transition-colors">
+                    <td className="px-5 py-3.5 font-semibold text-neutral-900">{s.staffName}</td>
+                    <td className="px-4 py-3.5 text-neutral-600 whitespace-nowrap">
+                      {s.dayIn}, {s.dateIn} <span className="text-neutral-400">{s.timeIn}</span>
                     </td>
-                    <td className="px-3 py-2.5 font-mono-num text-slate-900">
-                      {workHours(s.timeInTs, s.timeOutTs)?.toFixed(2) ?? "—"}
+                    <td className="px-4 py-3.5 text-neutral-600 whitespace-nowrap">
+                      {s.timeOut ? (
+                        <>
+                          {s.dayOut}, {s.dateOut} <span className="text-neutral-400">{s.timeOut}</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5 font-mono-num font-medium text-neutral-700">
+                      {workHours(s.timeInTs, s.timeOutTs)?.toFixed(2) ?? "—"} hrs
+                    </td>
+                    <td className="px-4 py-3.5">
                       {s.status === "active" ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-medium px-2 py-0.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-200/60">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           On duty
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-xs font-medium px-2 py-0.5">
+                        <span className="inline-flex items-center rounded-full bg-neutral-100 text-neutral-500 text-[11px] font-medium px-2.5 py-0.5">
                           Closed
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 font-mono-num text-slate-900">{s.orderCount}</td>
-                    <td className="px-3 py-2.5 font-mono-num text-slate-900">₱{peso(s.totalSales)}</td>
-                    <td className="px-3 py-2.5 font-mono-num text-emerald-600">₱{peso(s.totalProfit)}</td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5 font-mono-num font-bold text-neutral-900">{s.orderCount}</td>
+                    <td className="px-4 py-3.5 font-mono-num font-bold text-neutral-900">₱{peso(s.totalSales)}</td>
+                    <td className="px-4 py-3.5 font-mono-num font-bold text-emerald-600">₱{peso(s.totalProfit)}</td>
+                    <td className="px-5 py-3.5 text-right">
                       <button
                         onClick={() => downloadPdf(s)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                        className="text-neutral-700 hover:text-black font-semibold text-[11px] bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors"
                       >
                         PDF
                       </button>
@@ -1131,7 +1258,7 @@ export default function LedgerDashboard() {
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
-      setError("Couldn't load ledger data. Check if the n8n workflow is Active.");
+      setError("Couldn't load ledger data. Check if the n8n workflow is active.");
     } finally {
       setLoading(false);
     }
@@ -1291,7 +1418,7 @@ export default function LedgerDashboard() {
         o.orderNumber, o.customer, o.staff || "-", o.date, o.time, `P${peso(o.total)}`, `P${peso(o.profit)}`,
       ]),
       styles: { fontSize: 7 },
-      headStyles: { fillColor: [30, 41, 59] },
+      headStyles: { fillColor: [24, 24, 27] },
     });
 
     doc.addPage();
@@ -1310,7 +1437,7 @@ export default function LedgerDashboard() {
         `P${peso(s.totalProfit)}`,
       ]),
       styles: { fontSize: 7 },
-      headStyles: { fillColor: [30, 41, 59] },
+      headStyles: { fillColor: [24, 24, 27] },
     });
 
     doc.addPage();
@@ -1321,7 +1448,7 @@ export default function LedgerDashboard() {
       head: [["Item", "Category", "Quantity", "Unit", "Low stock at"]],
       body: allInventory.map((it) => [it.name, it.category, it.quantity, it.unit, it.lowStockThreshold]),
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [30, 41, 59] },
+      headStyles: { fillColor: [24, 24, 27] },
     });
 
     doc.save(`cafe-brewm-backup-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -1353,7 +1480,7 @@ export default function LedgerDashboard() {
       ]);
 
       if (!resetResult?.success) {
-        setResetError("Backup downloaded, but the reset wasn't confirmed. Check if the n8n workflow is Active.");
+        setResetError("Backup downloaded, but reset wasn't confirmed. Check if n8n workflow is Active.");
         setResetLoading(false);
         return;
       }
@@ -1388,92 +1515,101 @@ export default function LedgerDashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#F7F8FA] text-slate-900" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
-        .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-      `}</style>
-
-      <div className="max-w-[1400px] mx-auto px-6 py-6">
-        {/* Title row */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Cafe Brewm" className="h-9 w-9 rounded-full object-cover" />
-            <h1 className="text-2xl font-bold text-slate-900">Cafe Brewm Ledger</h1>
-            <span className="text-sm font-medium text-blue-600">{summary.count} Orders</span>
+    <div className="min-h-screen w-full bg-[#f8f9fa] text-neutral-900 pb-16">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Modern Top Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200/80 pb-5">
+          <div className="flex items-center gap-3.5">
+            <img src={logo} alt="Cafe Brewm" className="h-10 w-10 rounded-full object-cover ring-2 ring-neutral-200 shadow-sm" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">Cafe Brewm</h1>
+                <span className="rounded-full bg-neutral-900 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+                  Admin Ledger
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 font-medium mt-0.5">
+                Financial, inventory, and staff analytics dashboard
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={load}
-              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-600 px-3 py-2 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </button>
             <button
               onClick={exportCsv}
-              className="flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-neutral-900 hover:bg-black text-white text-xs font-semibold px-4 py-2 shadow-sm transition-all"
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-3.5 w-3.5" />
               Export CSV
             </button>
             <button
               onClick={() => { setResetOpen(true); setResetConfirmText(""); setResetError(null); }}
-              className="flex items-center gap-1.5 rounded-md border border-rose-200 bg-white text-sm font-medium text-rose-600 px-3 py-2 hover:bg-rose-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/50 text-xs font-semibold text-rose-600 px-3.5 py-2 hover:bg-rose-100/60 transition-all"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
               Reset Data
             </button>
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-500 px-3 py-2 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+              title="Logout"
+              className="flex items-center justify-center h-8.5 w-8.5 rounded-xl border border-neutral-200/80 bg-white text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm transition-all"
             >
               <LogOut className="h-4 w-4" />
             </button>
           </div>
-        </div>
+        </header>
 
+        {/* Reset Confirmation Modal */}
         {resetOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-lg p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white shadow-2xl p-6">
               {resetLoading ? (
-                <div className="text-center py-4">
-                  <RefreshCw className="h-8 w-8 mx-auto mb-4 text-slate-900 animate-spin" />
-                  <p className="text-sm font-medium text-slate-900 mb-1">Generating backup PDF and clearing data…</p>
-                  <p className="text-xs text-slate-400">Don't close this tab.</p>
+                <div className="text-center py-6">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-4 text-neutral-900 animate-spin" />
+                  <p className="text-sm font-bold text-neutral-900 mb-1">Generating full backup & clearing database...</p>
+                  <p className="text-xs text-neutral-400">Please do not close or refresh this tab.</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-3 text-rose-600">
-                    <AlertTriangle className="h-5 w-5" />
-                    <h3 className="text-base font-semibold">Reset all data?</h3>
+                  <div className="flex items-center gap-2.5 mb-3 text-rose-600">
+                    <div className="h-8 w-8 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <h3 className="text-base font-bold text-neutral-900">Reset all store records?</h3>
                   </div>
-                  <p className="text-sm text-slate-600 mb-4">
-                    This will permanently delete <strong>all</strong> orders, customers, staff shifts, and inventory from MySQL. It will automatically generate a backup PDF first. This cannot be undone afterward.
+                  <p className="text-xs text-neutral-600 mb-4 leading-relaxed">
+                    This will permanently clear orders, customers, shifts, and inventory from the database. A comprehensive backup PDF will automatically be generated and downloaded for your archives.
                   </p>
-                  {resetError && <p className="text-sm text-rose-600 mb-3">{resetError}</p>}
-                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">
-                    Type <strong>RESET</strong> to confirm:
+                  {resetError && <p className="text-xs text-rose-600 mb-3 font-semibold">{resetError}</p>}
+                  <label className="text-xs font-semibold text-neutral-600 mb-1.5 block">
+                    Type <span className="font-mono text-neutral-900 font-bold">RESET</span> to confirm:
                   </label>
                   <input
                     value={resetConfirmText}
                     onChange={(e) => setResetConfirmText(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-rose-500 mb-4"
+                    className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs font-mono outline-none focus:border-rose-500 mb-4"
                     placeholder="RESET"
                   />
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => setResetOpen(false)}
-                      className="rounded-md border border-slate-200 text-sm font-medium text-slate-600 px-3.5 py-2 hover:bg-slate-50 transition-colors"
+                      className="rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-600 px-4 py-2.5 hover:bg-neutral-50 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleResetConfirm}
                       disabled={resetConfirmText !== "RESET"}
-                      className="rounded-md bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 text-white text-sm font-medium px-3.5 py-2 transition-colors"
+                      className="rounded-xl bg-rose-600 hover:bg-rose-700 disabled:bg-neutral-200 text-white text-xs font-semibold px-4 py-2.5 transition-colors shadow-sm"
                     >
-                      Backup + Reset
+                      Download Backup & Reset
                     </button>
                   </div>
                 </>
@@ -1482,42 +1618,57 @@ export default function LedgerDashboard() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5 border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
-              activeTab === "overview" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "orders" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            Orders
-          </button>
-          <button
-            onClick={() => setActiveTab("inventory")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "inventory" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            Inventory
-          </button>
-          <button
-            onClick={() => setActiveTab("staff")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "staff" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            Staff
-          </button>
+        {/* Modern Segmented Navigation Tabs */}
+        <div className="flex items-center justify-start">
+          <div className="inline-flex bg-neutral-200/60 p-1 rounded-2xl gap-1">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
+                activeTab === "overview"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab("orders")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
+                activeTab === "orders"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <Receipt className="h-3.5 w-3.5" />
+              Orders Ledger
+            </button>
+            <button
+              onClick={() => setActiveTab("inventory")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
+                activeTab === "inventory"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <Package className="h-3.5 w-3.5" />
+              Inventory Stock
+            </button>
+            <button
+              onClick={() => setActiveTab("staff")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
+                activeTab === "staff"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Staff Shifts
+            </button>
+          </div>
         </div>
 
+        {/* Tab Contents */}
         {activeTab === "overview" ? (
           <OverviewTab />
         ) : activeTab === "inventory" ? (
@@ -1525,275 +1676,311 @@ export default function LedgerDashboard() {
         ) : activeTab === "staff" ? (
           <StaffTab />
         ) : (
-        <>
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              <Receipt className="h-3.5 w-3.5" /> Orders
-            </div>
-            <p className="font-mono-num text-xl font-semibold text-slate-900">{summary.count}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              <TrendingUp className="h-3.5 w-3.5" /> Revenue
-            </div>
-            <p className="font-mono-num text-xl font-semibold text-emerald-600">₱{peso(summary.revenue)}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              {summary.profit >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-              Est. Profit
-            </div>
-            <p className={`font-mono-num text-xl font-semibold ${summary.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {summary.profit >= 0 ? "" : "-"}₱{peso(Math.abs(summary.profit))}
-            </p>
-            <p className={`text-[11px] font-medium mt-0.5 ${summary.profit >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-              {summary.profit >= 0 ? "Kumita ✓" : "Nalugi ⚠"}
-            </p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              <Users className="h-3.5 w-3.5" /> Customers
-            </div>
-            <p className="font-mono-num text-xl font-semibold text-slate-900">{summary.customers}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              <Package className="h-3.5 w-3.5" /> Items sold
-            </div>
-            <p className="font-mono-num text-xl font-semibold text-slate-900">{summary.itemsSold}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1.5">
-              <Wallet className="h-3.5 w-3.5" /> Avg order
-            </div>
-            <p className="font-mono-num text-xl font-semibold text-slate-900">₱{peso(summary.avg)}</p>
-          </div>
-        </div>
+          /* Orders Ledger Tab */
+          <div className="space-y-5 animate-fade-in">
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  <Receipt className="h-3.5 w-3.5" /> Orders
+                </div>
+                <p className="font-mono-num text-2xl font-bold text-neutral-900">{summary.count}</p>
+              </div>
 
-        {/* Top products donut */}
-        <div className="rounded-lg border border-slate-200 bg-white p-5 mb-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">Top-selling items {selectedMonth !== "All" ? `— ${monthLabel(selectedMonth)}` : ""}</h2>
-          {topProducts.length === 0 ? (
-            <p className="text-sm text-slate-400 py-6 text-center">No data yet for the donut chart.</p>
-          ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-8">
-              <svg width="160" height="160" viewBox="0 0 120 120" className="shrink-0">
-                <g transform="rotate(-90 60 60)">
-                  {(() => {
-                    const r = 45;
-                    const circumference = 2 * Math.PI * r;
-                    let cumulative = 0;
-                    return topProducts.map((p, idx) => {
-                      const dash = (p.pct / 100) * circumference;
-                      const el = (
-                        <circle
-                          key={p.name}
-                          cx="60"
-                          cy="60"
-                          r={r}
-                          fill="none"
-                          stroke={p.color}
-                          strokeWidth="18"
-                          strokeDasharray={`${dash} ${circumference - dash}`}
-                          strokeDashoffset={-((cumulative / 100) * circumference)}
-                        />
-                      );
-                      cumulative += p.pct;
-                      return el;
-                    });
-                  })()}
-                </g>
-                <text x="60" y="56" textAnchor="middle" className="fill-slate-900" style={{ fontSize: 15, fontWeight: 700 }}>
-                  {summary.itemsSold}
-                </text>
-                <text x="60" y="72" textAnchor="middle" className="fill-slate-400" style={{ fontSize: 9 }}>
-                  items
-                </text>
-              </svg>
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-emerald-600 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  <TrendingUp className="h-3.5 w-3.5" /> Gross Revenue
+                </div>
+                <p className="font-mono-num text-2xl font-bold text-emerald-600">₱{peso(summary.revenue)}</p>
+              </div>
 
-              <div className="flex-1 w-full space-y-2.5">
-                {topProducts.map((p) => (
-                  <div key={p.name} className="flex items-center gap-3">
-                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
-                    <span className="text-sm text-slate-700 w-32 shrink-0 truncate">{p.name}</span>
-                    <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${p.pct}%`, backgroundColor: p.color }} />
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  {summary.profit >= 0 ? <TrendingUp className="h-3.5 w-3.5 text-emerald-600" /> : <TrendingDown className="h-3.5 w-3.5 text-rose-600" />}
+                  Est. Profit
+                </div>
+                <p className={`font-mono-num text-2xl font-bold ${summary.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {summary.profit >= 0 ? "" : "-"}₱{peso(Math.abs(summary.profit))}
+                </p>
+                <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${summary.profit >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                  {summary.profit >= 0 ? "Kumita ✓" : "Nalugi ⚠"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  <Users className="h-3.5 w-3.5" /> Customers
+                </div>
+                <p className="font-mono-num text-2xl font-bold text-neutral-900">{summary.customers}</p>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  <Package className="h-3.5 w-3.5" /> Items Sold
+                </div>
+                <p className="font-mono-num text-2xl font-bold text-neutral-900">{summary.itemsSold}</p>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+                <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                  <Wallet className="h-3.5 w-3.5" /> Avg Ticket
+                </div>
+                <p className="font-mono-num text-2xl font-bold text-neutral-900">₱{peso(summary.avg)}</p>
+              </div>
+            </div>
+
+            {/* Top Products Donut Row */}
+            <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-900">
+                    Top-Selling Menu Items {selectedMonth !== "All" ? `— ${monthLabel(selectedMonth)}` : ""}
+                  </h3>
+                  <p className="text-xs text-neutral-400">Distribution of items ordered</p>
+                </div>
+              </div>
+
+              {topProducts.length === 0 ? (
+                <p className="text-xs text-neutral-400 py-6 text-center">No sales data recorded yet.</p>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center gap-8">
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <svg width="150" height="150" viewBox="0 0 120 120">
+                      <g transform="rotate(-90 60 60)">
+                        {(() => {
+                          const r = 45;
+                          const circumference = 2 * Math.PI * r;
+                          let cumulative = 0;
+                          return topProducts.map((p) => {
+                            const dash = (p.pct / 100) * circumference;
+                            const el = (
+                              <circle
+                                key={p.name}
+                                cx="60"
+                                cy="60"
+                                r={r}
+                                fill="none"
+                                stroke={p.color}
+                                strokeWidth="16"
+                                strokeDasharray={`${dash} ${circumference - dash}`}
+                                strokeDashoffset={-((cumulative / 100) * circumference)}
+                                strokeLinecap="round"
+                                className="transition-all duration-500"
+                              />
+                            );
+                            cumulative += p.pct;
+                            return el;
+                          });
+                        })()}
+                      </g>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                      <span className="font-mono-num text-lg font-bold text-neutral-900 leading-none">
+                        {summary.itemsSold}
+                      </span>
+                      <span className="text-[10px] uppercase font-semibold text-neutral-400 mt-1">items</span>
                     </div>
-                    <span className="font-mono-num text-xs text-slate-500 w-16 text-right shrink-0">
-                      {p.qty} ({p.pct.toFixed(0)}%)
-                    </span>
                   </div>
-                ))}
-              </div>
+
+                  <div className="flex-1 w-full space-y-2.5">
+                    {topProducts.map((p) => (
+                      <div key={p.name} className="flex items-center gap-3">
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                        <span className="text-xs font-semibold text-neutral-700 w-36 shrink-0 truncate">{p.name}</span>
+                        <div className="flex-1 h-3 rounded-full bg-neutral-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${p.pct}%`, backgroundColor: p.color }}
+                          />
+                        </div>
+                        <span className="font-mono-num text-xs font-semibold text-neutral-600 w-20 text-right shrink-0">
+                          {p.qty} <span className="text-neutral-400 font-normal">({p.pct.toFixed(0)}%)</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <div className="relative">
-            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="appearance-none rounded-md border border-slate-200 bg-white text-sm pl-8 pr-8 py-2 outline-none focus:border-blue-500"
-            >
-              <option value="All">All months</option>
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {monthLabel(m)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative">
-            <select
-              value={selectedStaff}
-              onChange={(e) => setSelectedStaff(e.target.value)}
-              className="appearance-none rounded-md border border-slate-200 bg-white text-sm pl-3 pr-8 py-2 outline-none focus:border-blue-500"
-            >
-              <option value="All">All staff</option>
-              {staffNames.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative">
-            <select
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(e.target.value)}
-              className="appearance-none rounded-md border border-slate-200 bg-white text-sm pl-3 pr-8 py-2 outline-none focus:border-blue-500"
-            >
-              <option value="All">All days</option>
-              {days.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative ml-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search orders…"
-              className="w-64 rounded-md border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        {(selectedStaff !== "All" || selectedDay !== "All") && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-5 py-4 mb-4 flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-0.5">Computed total</p>
-              <p className="text-sm text-slate-700">
-                {selectedStaff === "All" ? "All staff" : selectedStaff}
-                {" · "}
-                {selectedDay === "All" ? "All days" : selectedDay}
-              </p>
-            </div>
-            <div className="flex items-center gap-6 ml-auto">
-              <div>
-                <p className="text-[11px] text-slate-500">Orders</p>
-                <p className="font-mono-num text-lg font-semibold text-slate-900">{summary.count}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Sales</p>
-                <p className="font-mono-num text-lg font-semibold text-slate-900">₱{peso(summary.revenue)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Profit</p>
-                <p className="font-mono-num text-lg font-semibold text-emerald-600">₱{peso(summary.profit)}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="w-10 px-4 py-2.5">
-                    <input type="checkbox" disabled className="rounded border-slate-300" />
-                  </th>
-                  {COLUMNS.map((col) => (
-                    <th key={col.key} className="text-left px-3 py-2.5 font-medium text-slate-500 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleSort(col.key)}
-                        className="flex items-center gap-1 hover:text-slate-800"
-                      >
-                        {col.label}
-                        <ArrowUpDown className="h-3 w-3" />
-                      </button>
-                    </th>
+            {/* Filter Toolbar */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="rounded-xl border border-neutral-200/90 bg-white text-xs font-medium text-neutral-800 px-3.5 py-2.5 outline-none focus:border-neutral-900 shadow-sm transition-all"
+                >
+                  <option value="All">All Months</option>
+                  {months.map((m) => (
+                    <option key={m} value={m}>
+                      {monthLabel(m)}
+                    </option>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={COLUMNS.length + 1} className="text-center py-10 text-slate-400">
-                      Loading ledger data…
-                    </td>
-                  </tr>
-                )}
-                {!loading && error && (
-                  <tr>
-                    <td colSpan={COLUMNS.length + 1} className="text-center py-10 text-rose-500">
-                      {error}
-                    </td>
-                  </tr>
-                )}
-                {!loading && !error && filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={COLUMNS.length + 1} className="text-center py-10 text-slate-400">
-                      No orders found.
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  !error &&
-                  filtered.map((o) => (
-                    <tr key={o.orderNumber + o.date + o.time} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-2.5">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(o.orderNumber)}
-                          onChange={() => toggleRow(o.orderNumber)}
-                          className="rounded border-slate-300"
-                        />
-                      </td>
-                      <td className="px-3 py-2.5 font-mono-num text-blue-600">#{o.orderNumber}</td>
-                      <td className="px-3 py-2.5 font-medium text-slate-800">{o.customer}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{o.staff || "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-500 max-w-[240px] truncate">{o.items}</td>
-                      <td className="px-3 py-2.5 text-slate-500 capitalize">{o.paymentMethod}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{o.orderType}</td>
-                      <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{o.date}</td>
-                      <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{o.time}</td>
-                      <td className="px-3 py-2.5 font-mono-num font-semibold text-slate-900 whitespace-nowrap">
-                        ₱{peso(o.total)}
-                      </td>
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  value={selectedStaff}
+                  onChange={(e) => setSelectedStaff(e.target.value)}
+                  className="rounded-xl border border-neutral-200/90 bg-white text-xs font-medium text-neutral-800 px-3.5 py-2.5 outline-none focus:border-neutral-900 shadow-sm transition-all"
+                >
+                  <option value="All">All Staff</option>
+                  {staffNames.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className="rounded-xl border border-neutral-200/90 bg-white text-xs font-medium text-neutral-800 px-3.5 py-2.5 outline-none focus:border-neutral-900 shadow-sm transition-all"
+                >
+                  <option value="All">All Days</option>
+                  {days.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative ml-auto w-full sm:w-72">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search orders, customers, items..."
+                  className="w-full rounded-xl border border-neutral-200/90 bg-white pl-10 pr-3.5 py-2.5 text-xs outline-none focus:border-neutral-900 shadow-sm transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Sub-filtered Summary Pill */}
+            {(selectedStaff !== "All" || selectedDay !== "All" || selectedMonth !== "All") && (
+              <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-subtle">
+                <div>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Filtered View</p>
+                  <p className="text-xs font-bold text-neutral-900 mt-0.5">
+                    {selectedStaff !== "All" ? selectedStaff : "All Staff"} • {selectedDay !== "All" ? selectedDay : "All Days"} • {selectedMonth !== "All" ? monthLabel(selectedMonth) : "All Time"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-5">
+                  <div>
+                    <span className="text-[10px] text-neutral-400 uppercase block font-medium">Orders</span>
+                    <span className="font-mono-num text-sm font-bold text-neutral-900">{summary.count}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-neutral-400 uppercase block font-medium">Sales</span>
+                    <span className="font-mono-num text-sm font-bold text-neutral-900">₱{peso(summary.revenue)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-neutral-400 uppercase block font-medium">Profit</span>
+                    <span className="font-mono-num text-sm font-bold text-emerald-600">₱{peso(summary.profit)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Orders Table */}
+            <div className="rounded-2xl border border-neutral-200/80 bg-white shadow-subtle overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-neutral-50/60 text-neutral-400 uppercase tracking-wider font-semibold">
+                      <th className="w-10 px-4 py-3.5">
+                        <input type="checkbox" disabled className="rounded border-neutral-300" />
+                      </th>
+                      {COLUMNS.map((col) => (
+                        <th key={col.key} className="text-left px-3.5 py-3.5 whitespace-nowrap">
+                          <button
+                            onClick={() => toggleSort(col.key)}
+                            className="flex items-center gap-1 hover:text-neutral-800 transition-colors"
+                          >
+                            {col.label}
+                            <ArrowUpDown className="h-3 w-3" />
+                          </button>
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {loading && (
+                      <tr>
+                        <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-neutral-400">
+                          Loading ledger records...
+                        </td>
+                      </tr>
+                    )}
+                    {!loading && error && (
+                      <tr>
+                        <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-rose-500 font-medium">
+                          {error}
+                        </td>
+                      </tr>
+                    )}
+                    {!loading && !error && filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-neutral-400">
+                          No matching orders found.
+                        </td>
+                      </tr>
+                    )}
+                    {!loading &&
+                      !error &&
+                      filtered.map((o) => (
+                        <tr key={o.orderNumber + o.date + o.time} className="hover:bg-neutral-50/60 transition-colors">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(o.orderNumber)}
+                              onChange={() => toggleRow(o.orderNumber)}
+                              className="rounded border-neutral-300"
+                            />
+                          </td>
+                          <td className="px-3.5 py-3 font-mono-num font-bold text-neutral-900">#{o.orderNumber}</td>
+                          <td className="px-3.5 py-3 font-semibold text-neutral-900">{o.customer}</td>
+                          <td className="px-3.5 py-3 text-neutral-600">{o.staff || "—"}</td>
+                          <td className="px-3.5 py-3 text-neutral-600 max-w-[260px] truncate" title={o.items}>
+                            {o.items}
+                          </td>
+                          <td className="px-3.5 py-3">
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 text-neutral-700 px-2 py-0.5 font-medium text-[11px] capitalize">
+                              {o.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="px-3.5 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium text-[11px] ${
+                                o.orderType === "Dine-in"
+                                  ? "bg-amber-50 text-amber-800 border border-amber-200/60"
+                                  : "bg-stone-100 text-stone-700"
+                              }`}
+                            >
+                              {o.orderType}
+                            </span>
+                          </td>
+                          <td className="px-3.5 py-3 text-neutral-500 whitespace-nowrap font-mono-num">{o.date}</td>
+                          <td className="px-3.5 py-3 text-neutral-500 whitespace-nowrap font-mono-num">{o.time}</td>
+                          <td className="px-3.5 py-3 font-mono-num font-bold text-neutral-900 whitespace-nowrap">
+                            ₱{peso(o.total)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-        </>
         )}
       </div>
 
+      {/* Floating AI Assistant Chat Widget */}
       <FloatingChatWidget />
     </div>
   );
