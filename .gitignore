@@ -5,3 +5,5 @@ dist
 cloudflared.exe
 tunnel-out.log
 tunnel-err.log
+n8n/
+n8n-deploy/
