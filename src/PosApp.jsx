@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -18,6 +18,11 @@ import {
   Drumstick,
   Flame,
   GlassWater,
+  X,
+  User,
+  Clock,
+  Sparkles,
+  ShoppingBag,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
@@ -168,7 +173,7 @@ const CATEGORIES = [
   "Waffle",
 ];
 const ORDER_TYPES = ["Pickup", "Delivery", "Dine In"];
-const PAYMENT_METHODS = [{ id: "cash", label: "Cash", icon: Banknote }];
+const PAYMENT_METHODS = [{ id: "cash", label: "Cash Payment", icon: Banknote }];
 const SIZE_OPTIONS = [
   { label: "12oz", extra: 0 },
   { label: "16oz", extra: 20 },
@@ -181,7 +186,7 @@ const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss
 const N8N_WEBHOOK_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-order";
 
 function money(n) {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function StaffLoginScreen({ onLogin }) {
@@ -198,50 +203,71 @@ function StaffLoginScreen({ onLogin }) {
       setError("");
       onLogin(match.name);
     } else {
-      setError("Wrong username or password.");
+      setError("Incorrect username or password. Please try again.");
     }
   }
 
   return (
-    <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap');`}</style>
+    <div className="min-h-screen w-full bg-[#f8f9fa] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-6">
-          <img src={logo} alt="Cafe Brewm" className="h-20 w-20 rounded-full object-cover shadow-sm mb-3" />
-          <h1 className="text-xl font-bold text-neutral-900" style={{ fontFamily: "'Fraunces', serif" }}>Cafe Brewm POS</h1>
-          <p className="text-sm text-neutral-500 mt-1">Staff login</p>
+        <div className="flex flex-col items-center mb-7">
+          <div className="relative mb-3.5">
+            <img
+              src={logo}
+              alt="Cafe Brewm"
+              className="h-20 w-20 rounded-2xl object-cover shadow-md ring-4 ring-white"
+            />
+            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight font-display">Cafe Brewm POS</h1>
+          <p className="text-xs text-neutral-500 font-medium tracking-wide uppercase mt-1">Staff Terminal Login</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-sm border border-neutral-200 bg-white shadow-sm p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-neutral-200/80 bg-white shadow-xl shadow-neutral-200/40 p-7 space-y-4"
+        >
           <div>
-            <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Username</label>
+            <label className="text-xs font-semibold text-neutral-700 mb-1.5 block">Staff Username</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your username"
+              placeholder="e.g. Juan or Maria"
               autoFocus
-              className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Password</label>
+            <label className="text-xs font-semibold text-neutral-700 mb-1.5 block">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••"
-              className="w-full rounded-sm border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+              placeholder="••••••••"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10"
             />
           </div>
 
-          {error && <p className="text-sm text-neutral-700">{error}</p>}
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-600 font-medium">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
-            className="w-full rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+            className="w-full rounded-xl bg-neutral-900 hover:bg-black active:scale-[0.99] text-white text-sm font-semibold py-3 transition-all shadow-sm"
           >
-            Log in
+            Sign in & Clock In
           </button>
+
+          <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-400">
+            <span>Cafe Brewm Station 1</span>
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Connected
+            </span>
+          </div>
         </form>
       </div>
     </div>
@@ -273,6 +299,20 @@ export default function PosApp() {
   });
   const [clockOutInfo, setClockOutInfo] = useState(null);
   const [clockBarActive, setClockBarActive] = useState(false);
+
+  const searchInputRef = useRef(null);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   async function handleStaffLogin(staffName) {
     setAuthPhase("loading");
@@ -391,6 +431,14 @@ export default function PosApp() {
     bellTimer.current = setTimeout(() => setBellRing(false), 1200);
   }
 
+  const categoryCounts = useMemo(() => {
+    const counts = { "All Items": PRODUCTS.length };
+    PRODUCTS.forEach((p) => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
+  }, []);
+
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((p) => {
       const inCategory = activeCategory === "All Items" || p.category === activeCategory;
@@ -404,6 +452,7 @@ export default function PosApp() {
   const taxable = subtotal - discountAmount;
   const tax = taxable * TAX_RATE;
   const total = taxable + tax;
+  const totalItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
   function addToCart(product) {
     setCart((prev) => {
@@ -463,7 +512,7 @@ export default function PosApp() {
       });
       const data = await res.json().catch(() => null);
       return {
-        text: data?.message || `Order #${String(payload.orderNumber).padStart(4, "0")} logged to ledger!`,
+        text: data?.message || `Order #${String(payload.orderNumber).padStart(4, "0")} synced to ledger!`,
         tone: "success",
       };
     } catch (err) {
@@ -515,7 +564,7 @@ export default function PosApp() {
   }
 
   const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
+    weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -527,35 +576,30 @@ export default function PosApp() {
 
   if (authPhase === "timeout") {
     return (
-      <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap');
-          .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-          @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
-        `}</style>
-        <div className="w-[320px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
-          <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>👋</div>
-          <p className="font-medium text-lg mb-1" style={{ fontFamily: "'Fraunces', serif" }}>Bye, {currentStaff}! Take care!</p>
-          <p className="text-xs text-neutral-400 mb-4">Shift Summary</p>
+      <div className="min-h-screen w-full bg-[#f8f9fa] flex items-center justify-center px-4">
+        <div className="w-[340px] rounded-2xl border border-neutral-200/80 bg-white p-7 text-center shadow-xl shadow-neutral-200/40 animate-fade-in">
+          <div className="mb-3 text-5xl animate-pop">👋</div>
+          <h2 className="font-semibold text-xl text-neutral-900 font-display">Bye, {currentStaff}!</h2>
+          <p className="text-xs text-neutral-500 mb-5 font-medium">Shift Summary & Clock Out</p>
 
-          <div className="space-y-3 text-left">
-            <div className="rounded-sm border border-neutral-200 px-4 py-2.5">
-              <p className="text-[11px] text-neutral-400 uppercase tracking-wide">Time In</p>
-              <p className="text-lg font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
-              <p className="text-xs text-neutral-500">{clockInInfo?.day}, {clockInInfo?.date}</p>
+          <div className="space-y-2.5 text-left mb-6">
+            <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3.5">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Time In</span>
+              <p className="text-lg font-bold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{clockInInfo?.day}, {clockInInfo?.date}</p>
             </div>
-            <div className="rounded-sm border border-neutral-200 px-4 py-2.5">
-              <p className="text-[11px] text-neutral-400 uppercase tracking-wide">Time Out</p>
-              <p className="text-lg font-semibold text-neutral-900 font-mono-num">{clockOutInfo?.time}</p>
-              <p className="text-xs text-neutral-500">{clockOutInfo?.day}, {clockOutInfo?.date}</p>
+            <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3.5">
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Time Out</span>
+              <p className="text-lg font-bold text-neutral-900 font-mono-num">{clockOutInfo?.time}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{clockOutInfo?.day}, {clockOutInfo?.date}</p>
             </div>
           </div>
 
           <button
             onClick={finishLogout}
-            className="w-full mt-5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+            className="w-full rounded-xl bg-neutral-900 hover:bg-black text-white text-sm font-semibold py-3 transition-all shadow-sm"
           >
-            Done, Log out
+            Return to Login Screen
           </button>
         </div>
       </div>
@@ -564,37 +608,33 @@ export default function PosApp() {
 
   if (authPhase === "loading" || authPhase === "timein" || authPhase === "loggingout") {
     return (
-      <div className="min-h-screen w-full bg-white flex items-center justify-center px-4" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap');
-          .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-          @keyframes bounceCoffee { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-          @keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
-        `}</style>
-        <div className="w-[300px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center shadow-sm">
+      <div className="min-h-screen w-full bg-[#f8f9fa] flex items-center justify-center px-4">
+        <div className="w-[320px] rounded-2xl border border-neutral-200/80 bg-white p-7 text-center shadow-xl shadow-neutral-200/40 animate-fade-in">
           {authPhase === "loading" || authPhase === "loggingout" ? (
             <>
-              <div className="text-5xl mb-4" style={{ animation: "bounceCoffee 1s ease-in-out infinite" }}>☕</div>
-              <p className="font-medium text-base mb-1" style={{ fontFamily: "'Fraunces', serif" }}>
+              <div className="text-5xl mb-4 animate-bounce">☕</div>
+              <p className="font-semibold text-lg text-neutral-900 font-display mb-1">
                 {authPhase === "loading" ? "Clocking in…" : "Clocking out…"}
               </p>
-              <p className="text-xs text-neutral-500 mb-4">
-                {authPhase === "loading" ? "Saving your time in" : "Saving your time out"}
+              <p className="text-xs text-neutral-500 mb-5">
+                {authPhase === "loading" ? "Recording shift start with ledger" : "Recording shift end with ledger"}
               </p>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div
-                  className="h-full bg-neutral-900 transition-[width] ease-linear"
+                  className="h-full bg-neutral-900 rounded-full transition-[width] ease-linear"
                   style={{ width: clockBarActive ? "100%" : "0%", transitionDuration: "5000ms" }}
                 />
               </div>
             </>
           ) : (
             <>
-              <div className="mb-3 text-5xl" style={{ animation: "popIn 0.5s ease-out" }}>☕</div>
-              <p className="font-medium text-lg mb-3" style={{ fontFamily: "'Fraunces', serif" }}>Time In</p>
-              <p className="text-2xl font-semibold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
-              <p className="text-sm text-neutral-500 mt-1">{clockInInfo?.day}, {clockInInfo?.date}</p>
-              <p className="text-xs text-neutral-400 mt-4">Have a great shift, {currentStaff}!</p>
+              <div className="mb-3 text-5xl animate-pop">☕</div>
+              <p className="font-semibold text-xl text-neutral-900 font-display mb-2">Shift Started</p>
+              <p className="text-3xl font-bold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
+              <p className="text-xs text-neutral-500 mt-1 font-medium">{clockInInfo?.day}, {clockInInfo?.date}</p>
+              <div className="mt-5 pt-4 border-t border-neutral-100">
+                <p className="text-xs text-neutral-600 font-medium">Have a wonderful shift, <span className="font-bold text-neutral-900">{currentStaff}</span>!</p>
+              </div>
             </>
           )}
         </div>
@@ -603,96 +643,113 @@ export default function PosApp() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-white text-neutral-900 flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
-        .font-display { font-family: 'Fraunces', serif; }
-        .font-mono-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes pop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
-        @keyframes slideIn { 0% { transform: translateX(16px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
-      `}</style>
-
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/90 backdrop-blur">
-        <div className="flex items-center gap-4 px-5 py-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <img src={logo} alt="Cafe Brewm" className="h-9 w-9 rounded-full object-cover" />
-            <span className="font-display font-semibold text-lg tracking-tight">Cafe Brewm</span>
+    <div className="min-h-screen w-full bg-[#f8f9fa] text-neutral-900 flex flex-col antialiased">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-20 border-b border-neutral-200/80 bg-white/95 backdrop-blur-md">
+        <div className="flex items-center gap-3 md:gap-4 px-4 sm:px-6 py-2.5">
+          {/* Brand Logo & Name */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="relative">
+              <img
+                src={logo}
+                alt="Cafe Brewm"
+                className="h-9 w-9 rounded-xl object-cover shadow-sm ring-1 ring-neutral-200"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-display font-bold text-base tracking-tight text-neutral-900">Cafe Brewm</span>
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600 border border-neutral-200/60">
+                  POS
+                </span>
+              </div>
+              <p className="text-[10px] text-neutral-400 leading-none hidden sm:block">Modern Terminal</p>
+            </div>
           </div>
 
+          {/* Search Bar with Shortcut hint */}
           <div className="flex-1 max-w-md relative hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <input
+              ref={searchInputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products…"
-              className="w-full rounded-sm border border-neutral-200 bg-neutral-50 pl-9 pr-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              placeholder="Search products or drinks…"
+              className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/70 pl-9 pr-14 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10"
             />
+            {query ? (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 rounded"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 bg-white rounded border border-neutral-200 shadow-2xs">
+                ⌘K
+              </kbd>
+            )}
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          {/* Actions & Staff Header Area */}
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={clearCart}
-              className="flex items-center gap-1.5 rounded-sm border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-400 text-sm font-medium px-3 py-2 transition-colors"
+              disabled={cart.length === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 disabled:opacity-40 disabled:hover:border-neutral-200 text-xs font-semibold px-3 py-2 transition-all"
+              title="Clear Cart"
             >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Clear cart</span>
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Clear</span>
             </button>
+
             <button
               onClick={() => setCustomItemModal(true)}
-              className="flex items-center gap-1.5 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium uppercase tracking-wide px-3.5 py-2 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-neutral-900 hover:bg-black active:scale-[0.98] text-white text-xs font-semibold px-3.5 py-2 transition-all shadow-sm"
             >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add item</span>
+              <Plus className="h-3.5 w-3.5" />
+              <span>Custom Item</span>
             </button>
-            <div className="hidden lg:flex items-center gap-1 pl-1">
-              {[RefreshCw, Printer].map((Icon, idx) => (
-                <button
-                  key={idx}
-                  className="h-9 w-9 rounded-sm border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:border-neutral-400 transition-colors"
-                >
-                  <Icon className="h-4 w-4" />
-                </button>
-              ))}
-            </div>
 
+            {/* Notifications Dropdown */}
             <div className="relative">
               <button
                 onClick={() => {
                   setNotifOpen((v) => !v);
                   setUnreadCount(0);
                 }}
-                className={`relative h-9 w-9 rounded-sm border flex items-center justify-center transition-colors ${
+                className={`relative h-9 w-9 rounded-xl border flex items-center justify-center transition-all ${
                   bellRing
-                    ? "border-neutral-900 text-neutral-900 bg-neutral-100"
-                    : "border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-400"
+                    ? "border-neutral-900 text-neutral-900 bg-neutral-100 ring-2 ring-neutral-900/10"
+                    : "border-neutral-200/80 bg-white text-neutral-600 hover:text-neutral-900 hover:border-neutral-300"
                 }`}
+                title="Notifications"
               >
                 <Bell className={`h-4 w-4 ${bellRing ? "animate-bounce" : ""}`} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 h-4.5 min-w-[18px] px-1 rounded-full bg-neutral-900 text-[10px] font-semibold text-white flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-neutral-900 text-[10px] font-bold text-white flex items-center justify-center leading-none ring-2 ring-white">
                     {unreadCount}
                   </span>
                 )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-sm border border-neutral-200 bg-white shadow-lg z-20 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-neutral-200 text-xs font-medium text-neutral-500">
-                    Notifications
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-neutral-200 bg-white shadow-2xl z-30 overflow-hidden animate-fade-in">
+                  <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+                    <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">Notifications</span>
+                    <span className="text-[11px] text-neutral-400">{notifications.length} updates</span>
                   </div>
-                  <div className="max-h-72 overflow-y-auto no-scrollbar">
+                  <div className="max-h-72 overflow-y-auto custom-scrollbar divide-y divide-neutral-100">
                     {notifications.length === 0 && (
-                      <p className="px-3 py-6 text-center text-sm text-neutral-400">No notifications yet.</p>
+                      <p className="px-4 py-8 text-center text-xs text-neutral-400">No recent notifications.</p>
                     )}
                     {notifications.map((n) => (
-                      <div key={n.id} className="px-3 py-2.5 border-b border-neutral-100 flex items-start gap-2">
-                        <Bell className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${n.tone === "error" ? "text-neutral-400" : "text-neutral-900"}`} />
-                        <div>
-                          <p className="text-xs text-neutral-900 leading-snug">{n.message}</p>
-                          <p className="text-[10px] text-neutral-400 mt-0.5">{n.time}</p>
+                      <div key={n.id} className="px-4 py-3 flex items-start gap-2.5 hover:bg-neutral-50/70 transition-colors">
+                        <span className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${n.tone === "error" ? "bg-red-500" : "bg-emerald-500"}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-neutral-800 leading-snug">{n.message}</p>
+                          <p className="text-[10px] text-neutral-400 mt-1 font-mono-num">{n.time}</p>
                         </div>
                       </div>
                     ))}
@@ -700,108 +757,158 @@ export default function PosApp() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
-              <div className="h-8 w-8 rounded-full bg-neutral-900 text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                {currentStaff?.[0]?.toUpperCase()}
+
+            {/* Staff Pill & Logout */}
+            <div className="flex items-center gap-2 pl-2 border-l border-neutral-200/80">
+              <div className="flex items-center gap-2 py-1 px-2 rounded-xl bg-neutral-100/80 border border-neutral-200/60">
+                <div className="h-6 w-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  {currentStaff?.[0]?.toUpperCase()}
+                </div>
+                <span className="hidden sm:inline text-xs font-semibold text-neutral-800">{currentStaff}</span>
               </div>
-              <span className="hidden sm:inline text-sm font-medium text-neutral-700">{currentStaff}</span>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-2.5 py-2 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100/80 text-red-600 border border-red-200/60 text-xs font-semibold px-2.5 py-2 transition-colors"
+                title="Log out & Clock out"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Log out</span>
+                <span className="hidden sm:inline">Clock Out</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile search */}
-        <div className="sm:hidden px-5 pb-3 relative">
-          <Search className="absolute left-8 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+        {/* Mobile Search input */}
+        <div className="sm:hidden px-4 pb-3 relative">
+          <Search className="absolute left-7 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products…"
-            className="w-full rounded-sm border border-neutral-200 bg-neutral-50 pl-9 pr-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900"
+            className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50 pl-9 pr-8 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900"
           />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-7 top-1/2 -translate-y-1/2 text-neutral-400 p-1"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </header>
 
+      {/* Main Content Area */}
       <div className="flex flex-col lg:flex-row flex-1">
-        {/* Sidebar */}
-        <aside className="lg:w-52 shrink-0 border-b lg:border-b-0 lg:border-r border-neutral-200 bg-neutral-50">
-          <div className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar px-3 py-3 lg:px-3">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`shrink-0 text-left text-sm font-medium rounded-sm px-3 py-2 whitespace-nowrap transition-colors ${
-                  activeCategory === cat
-                    ? "bg-neutral-900 text-white"
-                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="flex-1 px-5 py-5 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-5">
-            <div>
-              <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Order type</span>
-              <div className="inline-flex rounded-sm border border-neutral-200 p-1 bg-neutral-50">
-                {ORDER_TYPES.map((t) => (
+        {/* Left / Center Section: Category Pills & Product Catalog */}
+        <section className="flex-1 flex flex-col min-w-0 p-4 sm:p-6 space-y-4">
+          {/* Horizontal Category Navigation Bar */}
+          <div className="bg-white rounded-2xl border border-neutral-200/80 p-2 shadow-sm">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+              {CATEGORIES.map((cat) => {
+                const isActive = activeCategory === cat;
+                const count = categoryCounts[cat] || 0;
+                return (
                   <button
-                    key={t}
-                    onClick={() => setOrderType(t)}
-                    className={`text-sm font-medium rounded-sm px-3 py-1.5 transition-colors ${
-                      orderType === t ? "bg-white text-neutral-900 ring-1 ring-neutral-900" : "text-neutral-500 hover:text-neutral-900"
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold rounded-xl px-3.5 py-2 transition-all whitespace-nowrap ${
+                      isActive
+                        ? "bg-neutral-900 text-white shadow-sm ring-1 ring-neutral-900"
+                        : "bg-transparent text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100/70"
                     }`}
                   >
-                    {t}
+                    <span>{cat}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono-num font-medium ${
+                        isActive ? "bg-neutral-800 text-neutral-300" : "bg-neutral-100 text-neutral-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick Order Controls: Type, Discount, Note */}
+          <div className="bg-white rounded-2xl border border-neutral-200/80 p-3.5 shadow-sm flex flex-wrap items-center gap-3">
+            {/* Order Type Pills */}
+            <div className="flex items-center gap-1 bg-neutral-100/80 p-1 rounded-xl border border-neutral-200/60">
+              {ORDER_TYPES.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setOrderType(t)}
+                  className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-all ${
+                    orderType === t
+                      ? "bg-white text-neutral-900 shadow-xs ring-1 ring-neutral-900/10"
+                      : "text-neutral-500 hover:text-neutral-900"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
 
-            <div>
-              <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Discount</span>
+            {/* Discount Select */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-neutral-500">Discount:</span>
               <select
                 value={discountPct}
                 onChange={(e) => setDiscountPct(Number(e.target.value))}
-                className="rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 px-3 py-2 outline-none focus:border-neutral-900"
+                className="rounded-xl border border-neutral-200 bg-neutral-50/60 text-xs font-semibold text-neutral-900 px-3 py-1.5 outline-none focus:border-neutral-900 focus:bg-white transition-all cursor-pointer"
               >
-                <option value={0}>None</option>
-                <option value={5}>5%</option>
-                <option value={10}>10%</option>
-                <option value={15}>15%</option>
+                <option value={0}>No Discount (0%)</option>
+                <option value={5}>5% Senior / PWD</option>
+                <option value={10}>10% Staff / VIP</option>
+                <option value={15}>15% Promo</option>
               </select>
             </div>
 
-            <div className="flex-1 min-w-[160px]">
-              <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Note</span>
+            {/* Order Note */}
+            <div className="flex-1 min-w-[200px]">
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Your comment here…"
-                className="w-full rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+                placeholder="Special instruction / table number / note…"
+                className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/60 text-xs text-neutral-900 placeholder:text-neutral-400 px-3 py-1.5 outline-none focus:border-neutral-900 focus:bg-white transition-all"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+          {/* Product Grid Header */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-baseline gap-2">
+              <h2 className="font-display text-lg font-bold text-neutral-900">{activeCategory}</h2>
+              <span className="text-xs text-neutral-400 font-medium">
+                ({filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"})
+              </span>
+            </div>
+            {query && (
+              <span className="text-xs text-neutral-500">
+                Filtered by: <span className="font-semibold text-neutral-900">"{query}"</span>
+              </span>
+            )}
+          </div>
+
+          {/* Product Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-3.5">
             {filteredProducts.map((p) => {
               const Icon = p.icon;
               const hasTempSize = TEMP_SIZE_CATEGORIES.includes(p.category);
               const hasSizeOnly = SIZE_ONLY_CATEGORIES.includes(p.category);
               const hasVariants = hasTempSize || hasSizeOnly;
-              const inCart = hasVariants
-                ? cart.some((i) => typeof i.id === "string" && i.id.startsWith(`${p.id}-`))
-                : cart.find((i) => i.id === p.id);
+
+              // Calculate total qty of this product currently in cart
+              const inCartQty = cart.reduce(
+                (sum, item) =>
+                  item.id === p.id || (typeof item.id === "string" && item.id.startsWith(`${p.id}-`))
+                    ? sum + item.qty
+                    : sum,
+                0
+              );
+
               return (
                 <button
                   key={p.id}
@@ -810,83 +917,168 @@ export default function PosApp() {
                       setVariantModal({ product: p, mode: "tempSize", temp: "Hot", size: "12oz" });
                     } else if (hasSizeOnly) {
                       setVariantModal({ product: p, mode: "sizeOnly", size: "12oz" });
-                    } else if (inCart) {
-                      removeItem(p.id);
                     } else {
                       addToCart(p);
                     }
                   }}
-                  className={`text-left bg-white rounded-sm border p-3 transition-all hover:border-neutral-400 ${
-                    inCart ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
+                  className={`group relative text-left bg-white rounded-2xl border p-3.5 flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:border-neutral-300 active:scale-[0.99] ${
+                    inCartQty > 0
+                      ? "border-neutral-900 ring-2 ring-neutral-900/10 shadow-sm"
+                      : "border-neutral-200/80 shadow-2xs"
                   }`}
                 >
-                  <div className="h-16 w-16 rounded-sm bg-neutral-100 flex items-center justify-center mb-3">
-                    <Icon className="h-7 w-7 text-neutral-900" strokeWidth={1.6} />
-                  </div>
-                  <p className="font-display text-sm font-medium text-neutral-900 leading-snug">{p.name}</p>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="font-mono-num text-sm font-semibold text-neutral-900">₱{money(p.price)}</span>
-                    {p.originalPrice && (
-                      <span className="font-mono-num text-xs text-neutral-400 line-through">₱{money(p.originalPrice)}</span>
+                  {/* Quantity In Cart Badge */}
+                  {inCartQty > 0 && (
+                    <span className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded-full bg-neutral-900 text-white font-mono-num text-[11px] font-bold shadow-sm animate-pop">
+                      {inCartQty} in cart
+                    </span>
+                  )}
+
+                  {/* Icon & Category Tag */}
+                  <div>
+                    <div className="h-14 w-14 rounded-xl bg-neutral-100/90 group-hover:bg-neutral-200/80 flex items-center justify-center mb-3 transition-colors">
+                      <Icon className="h-6 w-6 text-neutral-800 group-hover:scale-110 transition-transform duration-200" strokeWidth={1.75} />
+                    </div>
+                    <p className="font-semibold text-neutral-900 text-sm leading-snug line-clamp-2">
+                      {p.name}
+                    </p>
+                    {hasVariants && (
+                      <span className="inline-block mt-1 text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded uppercase tracking-wider">
+                        {hasTempSize ? "Sizes & Temp" : "Sizes available"}
+                      </span>
                     )}
+                  </div>
+
+                  {/* Price & Add Indicator */}
+                  <div className="mt-3.5 pt-2.5 border-t border-neutral-100 flex items-center justify-between">
+                    <div>
+                      <span className="font-mono-num text-sm font-bold text-neutral-900">
+                        ₱{money(p.price)}
+                      </span>
+                      {hasVariants && <span className="text-[10px] text-neutral-400 ml-1">base</span>}
+                    </div>
+                    <div
+                      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
+                        inCartQty > 0
+                          ? "bg-neutral-900 text-white"
+                          : "bg-neutral-100 text-neutral-600 group-hover:bg-neutral-900 group-hover:text-white"
+                      }`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </div>
                   </div>
                 </button>
               );
             })}
+
             {filteredProducts.length === 0 && (
-              <p className="col-span-full text-sm text-neutral-400 py-10 text-center">
-                No products match “{query}”.
-              </p>
+              <div className="col-span-full py-16 text-center bg-white rounded-2xl border border-neutral-200/80">
+                <Search className="mx-auto h-8 w-8 text-neutral-300 mb-2" />
+                <p className="text-sm font-semibold text-neutral-700">No items found</p>
+                <p className="text-xs text-neutral-400 mt-1">
+                  No products matched “{query}” in {activeCategory}.
+                </p>
+                <button
+                  onClick={() => {
+                    setQuery("");
+                    setActiveCategory("All Items");
+                  }}
+                  className="mt-3 px-3 py-1.5 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
+                >
+                  Reset filters
+                </button>
+              </div>
             )}
           </div>
-        </main>
+        </section>
 
-        {/* Cart */}
-        <aside className="lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-neutral-200 bg-neutral-50 px-5 py-5 flex flex-col lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-hidden">
-          <div className="flex items-baseline justify-between mb-4 shrink-0">
-            <h2 className="font-display font-semibold text-base">Cart</h2>
+        {/* Right Sidebar: Cart & Order Receipt */}
+        <aside className="lg:w-96 shrink-0 border-t lg:border-t-0 lg:border-l border-neutral-200/80 bg-white p-4 sm:p-5 flex flex-col lg:sticky lg:top-[57px] lg:h-[calc(100vh-57px)]">
+          {/* Cart Header */}
+          <div className="flex items-center justify-between pb-3.5 border-b border-neutral-100 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-neutral-900 text-white flex items-center justify-center shadow-2xs">
+                <ShoppingBag className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-base text-neutral-900">Current Order</h2>
+                <p className="text-[11px] text-neutral-400 font-medium">
+                  {totalItemsCount} {totalItemsCount === 1 ? "item" : "items"} selected
+                </p>
+              </div>
+            </div>
             <div className="text-right">
-              <p className="text-xs font-mono-num text-neutral-900 font-semibold">
+              <span className="inline-block px-2 py-0.5 rounded-md bg-neutral-100 border border-neutral-200/60 font-mono-num text-xs font-bold text-neutral-900">
                 #{String(orderNumber).padStart(4, "0")}
-              </p>
-              <p className="text-[11px] text-neutral-400">{today}</p>
+              </span>
+              <p className="text-[10px] text-neutral-400 mt-0.5">{today}</p>
             </div>
           </div>
 
-          <input
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="Customer name (for ledger)"
-            className="w-full mb-4 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900 shrink-0"
-          />
+          {/* Customer Name Input */}
+          <div className="mt-3.5 mb-2 shrink-0">
+            <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+              Customer Name
+            </label>
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Guest Customer (for ledger)"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 px-3.5 py-2 outline-none focus:border-neutral-900 focus:bg-white transition-all"
+            />
+          </div>
 
-          <div className="flex-1 min-h-0 space-y-3 mb-4 max-h-[360px] lg:max-h-none overflow-y-auto no-scrollbar">
+          {/* Cart Items List */}
+          <div className="flex-1 min-h-[140px] space-y-2.5 my-2 overflow-y-auto custom-scrollbar pr-1">
             {cart.length === 0 && (
-              <p className="text-sm text-neutral-400 py-8 text-center">Cart is empty. Tap a product to add it.</p>
-            )}
-            {cart.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 truncate">{item.name}</p>
-                  <p className="font-mono-num text-xs text-neutral-500">₱{money(item.price)}</p>
+              <div className="h-full flex flex-col items-center justify-center py-10 text-center text-neutral-400">
+                <div className="h-12 w-12 rounded-2xl bg-neutral-100 flex items-center justify-center mb-2 text-neutral-300">
+                  <Coffee className="h-6 w-6" />
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <p className="text-xs font-semibold text-neutral-600">Cart is empty</p>
+                <p className="text-[11px] text-neutral-400 max-w-[180px] mt-0.5">
+                  Tap any item from the catalog to add it to the order.
+                </p>
+              </div>
+            )}
+
+            {cart.map((item) => (
+              <div
+                key={item.id}
+                className="group rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-2.5 flex items-center justify-between gap-2 hover:border-neutral-300 hover:bg-neutral-50 transition-all"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-neutral-900 leading-snug truncate">{item.name}</p>
+                  <p className="font-mono-num text-[11px] font-bold text-neutral-600 mt-0.5">
+                    ₱{money(item.price)}
+                    {item.qty > 1 && (
+                      <span className="text-neutral-400 font-normal ml-1">
+                        (₱{money(item.price * item.qty)})
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => changeQty(item.id, -1)}
-                    className="h-6 w-6 rounded-sm border border-neutral-200 flex items-center justify-center text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+                    className="h-6 w-6 rounded-lg border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-neutral-900 hover:text-neutral-900 transition-colors shadow-2xs"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
-                  <span className="font-mono-num text-sm w-4 text-center">{item.qty}</span>
+                  <span className="font-mono-num text-xs font-bold w-5 text-center text-neutral-900">
+                    {item.qty}
+                  </span>
                   <button
                     onClick={() => changeQty(item.id, 1)}
-                    className="h-6 w-6 rounded-sm border border-neutral-200 flex items-center justify-center text-neutral-500 hover:border-neutral-900 hover:text-neutral-900"
+                    className="h-6 w-6 rounded-lg border border-neutral-200 bg-white flex items-center justify-center text-neutral-600 hover:border-neutral-900 hover:text-neutral-900 transition-colors shadow-2xs"
                   >
                     <Plus className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="h-6 w-6 rounded-sm flex items-center justify-center text-neutral-400 hover:text-neutral-900"
+                    className="h-6 w-6 ml-0.5 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-600 transition-colors"
+                    title="Remove item"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -895,27 +1087,36 @@ export default function PosApp() {
             ))}
           </div>
 
-          <div className="border-t border-dashed border-neutral-200 pt-3 space-y-1.5 shrink-0">
-            <div className="flex justify-between text-sm text-neutral-500">
+          {/* Pricing & Checkout Summary */}
+          <div className="border-t border-dashed border-neutral-200 pt-3.5 space-y-1.5 shrink-0">
+            <div className="flex justify-between text-xs text-neutral-500 font-medium">
               <span>Subtotal</span>
-              <span className="font-mono-num">₱{money(subtotal)}</span>
+              <span className="font-mono-num font-semibold text-neutral-800">₱{money(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm text-neutral-500">
-              <span>Discount {discountPct > 0 ? `(${discountPct}%)` : ""}</span>
-              <span className="font-mono-num">-₱{money(discountAmount)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-neutral-500">
+
+            {discountPct > 0 && (
+              <div className="flex justify-between text-xs text-emerald-600 font-medium">
+                <span>Discount ({discountPct}%)</span>
+                <span className="font-mono-num font-semibold">-₱{money(discountAmount)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-xs text-neutral-500 font-medium">
               <span>Tax ({Math.round(TAX_RATE * 100)}%)</span>
-              <span className="font-mono-num">₱{money(tax)}</span>
+              <span className="font-mono-num font-semibold text-neutral-800">₱{money(tax)}</span>
             </div>
-            <div className="flex justify-between text-base font-semibold pt-1.5 mt-1.5 border-t border-neutral-200">
-              <span className="font-display">Total</span>
-              <span className="font-mono-num text-neutral-900">₱{money(total)}</span>
+
+            <div className="flex justify-between items-baseline text-base font-bold pt-2 mt-2 border-t border-neutral-200">
+              <span className="font-display text-neutral-900">Total Due</span>
+              <span className="font-mono-num text-lg text-neutral-900 font-extrabold">₱{money(total)}</span>
             </div>
           </div>
 
-          <div className="mt-4 shrink-0">
-            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Payment method</span>
+          {/* Payment Method Selector */}
+          <div className="mt-3.5 shrink-0">
+            <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1.5">
+              Payment Method
+            </span>
             <div className="grid grid-cols-1 gap-2">
               {PAYMENT_METHODS.map((m) => {
                 const Icon = m.icon;
@@ -924,61 +1125,82 @@ export default function PosApp() {
                   <button
                     key={m.id}
                     onClick={() => setPaymentMethod(m.id)}
-                    className={`flex flex-col items-center gap-1 rounded-sm border py-2.5 text-xs font-medium transition-colors ${
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs font-semibold transition-all ${
                       active
-                        ? "border-neutral-900 bg-neutral-100 text-neutral-900"
-                        : "border-neutral-200 text-neutral-500 hover:text-neutral-900"
+                        ? "border-neutral-900 bg-neutral-900 text-white shadow-2xs"
+                        : "border-neutral-200 bg-neutral-50/50 text-neutral-600 hover:border-neutral-300"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
-                    {m.label}
+                    <span>{m.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* Place Order CTA Button */}
           <button
             onClick={placeOrder}
             disabled={cart.length === 0 || orderStatus !== "idle"}
-            className="mt-4 w-full rounded-sm bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white font-medium text-sm uppercase tracking-wide py-3 transition-colors flex items-center justify-center gap-2 shrink-0"
+            className="mt-3.5 w-full rounded-xl bg-neutral-900 hover:bg-black active:scale-[0.99] disabled:bg-neutral-200 disabled:text-neutral-400 text-white font-semibold text-sm py-3.5 transition-all shadow-md flex items-center justify-center gap-2 shrink-0"
           >
             {orderStatus === "loading" ? (
               <>
-                <RefreshCw className="h-4 w-4 animate-spin" /> Processing…
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Processing Order…</span>
               </>
             ) : orderStatus === "success" ? (
               <>
-                <Check className="h-4 w-4" /> Order placed
+                <Check className="h-4 w-4 text-emerald-400" />
+                <span>Order Placed!</span>
               </>
             ) : (
-              "Place order"
+              <>
+                <span>Complete Order</span>
+                <span className="font-mono-num text-neutral-400 font-normal">
+                  (₱{money(total)})
+                </span>
+              </>
             )}
           </button>
         </aside>
       </div>
 
+      {/* Add Custom Item Modal */}
       {customItemModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-xs rounded-sm border border-neutral-200 bg-white px-6 py-6">
-            <p className="font-display text-base font-medium text-neutral-900 mb-4">Add custom item</p>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-xs px-4 animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-base font-bold text-neutral-900">Add Custom Item</h3>
+              <button
+                onClick={() => {
+                  setCustomItemModal(false);
+                  setCustomItemName("");
+                  setCustomItemPrice("");
+                }}
+                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Item name</span>
+            <label className="text-xs font-semibold text-neutral-700 mb-1 block">Item Name</label>
             <input
               value={customItemName}
               onChange={(e) => setCustomItemName(e.target.value)}
-              placeholder="e.g. Special request"
+              placeholder="e.g. Special Pastry, Extra Shot"
               autoFocus
-              className="w-full mb-3 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+              className="w-full mb-3.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:bg-white"
             />
 
-            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Price</span>
+            <label className="text-xs font-semibold text-neutral-700 mb-1 block">Price (₱)</label>
             <input
               type="number"
               value={customItemPrice}
               onChange={(e) => setCustomItemPrice(e.target.value)}
               placeholder="0.00"
-              className="w-full mb-5 rounded-sm border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 px-3 py-2 outline-none focus:border-neutral-900"
+              className="w-full mb-5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-900 focus:bg-white"
             />
 
             <div className="flex items-center gap-2">
@@ -988,121 +1210,148 @@ export default function PosApp() {
                   setCustomItemName("");
                   setCustomItemPrice("");
                 }}
-                className="flex-1 rounded-sm border border-neutral-200 text-sm font-medium text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
+                className="flex-1 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmCustomItem}
                 disabled={!customItemName.trim() || !(Number(customItemPrice) > 0)}
-                className="flex-1 rounded-sm bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-sm font-medium py-2.5 transition-colors"
+                className="flex-1 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-200 disabled:text-neutral-400 text-white text-xs font-semibold py-2.5 transition-all shadow-xs"
               >
-                Add to cart
+                Add to Cart
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Variant Selection Modal (Size / Temperature) */}
       {variantModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-xs rounded-sm border border-neutral-200 bg-white px-6 py-6">
-            <p className="font-display text-base font-medium text-neutral-900 mb-4">{variantModal.product.name}</p>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-xs px-4 animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display text-base font-bold text-neutral-900">{variantModal.product.name}</h3>
+                <p className="text-xs text-neutral-400">Select drink temperature and size</p>
+              </div>
+              <button
+                onClick={() => setVariantModal(null)}
+                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
             {variantModal.mode === "tempSize" && (
-              <>
-                <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Temperature</span>
-                <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="mb-4">
+                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2 block">
+                  Temperature
+                </label>
+                <div className="grid grid-cols-2 gap-2">
                   {["Hot", "Iced"].map((t) => (
                     <button
                       key={t}
                       onClick={() => setVariantModal((v) => ({ ...v, temp: t }))}
-                      className={`rounded-sm border py-2 text-sm font-medium transition-colors ${
+                      className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
                         variantModal.temp === t
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                          ? "border-neutral-900 bg-neutral-900 text-white shadow-2xs"
+                          : "border-neutral-200 bg-neutral-50/60 text-neutral-700 hover:border-neutral-300"
                       }`}
                     >
                       {t}
                     </button>
                   ))}
                 </div>
-              </>
+              </div>
             )}
 
-            <span className="text-xs font-medium text-neutral-500 mb-1.5 block">Size</span>
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              {SIZE_OPTIONS.map((s) => (
-                <button
-                  key={s.label}
-                  onClick={() => setVariantModal((v) => ({ ...v, size: s.label }))}
-                  className={`rounded-sm border py-2 text-xs font-medium transition-colors ${
-                    variantModal.size === s.label
-                      ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
-                  }`}
-                >
-                  <div>{s.label}</div>
-                  <div className="font-mono-num">₱{money(variantModal.product.price + s.extra)}</div>
-                </button>
-              ))}
+            <div className="mb-5">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2 block">
+                Size
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {SIZE_OPTIONS.map((s) => {
+                  const active = variantModal.size === s.label;
+                  return (
+                    <button
+                      key={s.label}
+                      onClick={() => setVariantModal((v) => ({ ...v, size: s.label }))}
+                      className={`rounded-xl border p-2.5 text-center transition-all ${
+                        active
+                          ? "border-neutral-900 bg-neutral-900 text-white shadow-2xs"
+                          : "border-neutral-200 bg-neutral-50/60 text-neutral-700 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="text-xs font-bold">{s.label}</div>
+                      <div className={`font-mono-num text-[11px] font-semibold mt-0.5 ${active ? "text-neutral-300" : "text-neutral-500"}`}>
+                        ₱{money(variantModal.product.price + s.extra)}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setVariantModal(null)}
-                className="flex-1 rounded-sm border border-neutral-200 text-sm font-medium text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
+                className="flex-1 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-600 py-2.5 hover:bg-neutral-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmVariant}
-                className="flex-1 rounded-sm bg-neutral-900 hover:bg-black text-white text-sm font-medium py-2.5 transition-colors"
+                className="flex-1 rounded-xl bg-neutral-900 hover:bg-black text-white text-xs font-semibold py-2.5 transition-all shadow-xs"
               >
-                Add to cart
+                Add to Cart
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Order Processing / Confirmation Modal */}
       {orderStatus !== "idle" && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-[300px] rounded-sm border border-neutral-200 bg-white px-8 py-8 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs px-4 animate-fade-in">
+          <div className="w-[320px] rounded-2xl border border-neutral-200 bg-white p-7 text-center shadow-2xl">
             {orderStatus === "loading" ? (
               <>
                 <RefreshCw className="mx-auto mb-4 h-8 w-8 text-neutral-900 animate-spin" />
-                <p className="font-display text-base mb-1">Processing order…</p>
-                <p className="text-xs text-neutral-500 mb-4">Syncing to ledger, CRM, and Slack</p>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+                <p className="font-display text-base font-bold text-neutral-900 mb-1">Syncing Order…</p>
+                <p className="text-xs text-neutral-500 mb-5">Connecting to ledger and CRM webhook</p>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
                   <div
-                    className="h-full bg-neutral-900 transition-[width] ease-linear"
+                    className="h-full bg-neutral-900 rounded-full transition-[width] ease-linear"
                     style={{ width: barActive ? "100%" : "0%", transitionDuration: "5000ms" }}
                   />
                 </div>
               </>
             ) : (
               <>
-                <div className="mb-3 text-5xl" style={{ animation: "pop 0.5s ease-out" }}>
-                  🎉
-                </div>
-                <p className="font-display text-lg font-semibold text-neutral-900 mb-1">Order placed!</p>
-                <p className="text-sm text-neutral-500">Thanks for your order!</p>
+                <div className="mb-3 text-5xl animate-pop">🎉</div>
+                <h3 className="font-display text-xl font-bold text-neutral-900 mb-1">Order Complete!</h3>
+                <p className="text-xs text-neutral-500 mb-1">Successfully recorded into ledger.</p>
+                <p className="text-xs font-mono-num font-semibold text-neutral-400">Order #{String(orderNumber - 1).padStart(4, "0")}</p>
               </>
             )}
           </div>
         </div>
       )}
 
+      {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-20 right-5 z-50 max-w-xs rounded-sm border px-4 py-3 shadow-lg flex items-start gap-2 backdrop-blur bg-white/95 ${
-            toast.tone === "error" ? "border-neutral-400 text-neutral-900" : "border-neutral-900 text-neutral-900"
+          className={`fixed top-16 right-5 z-50 max-w-sm rounded-2xl border px-4 py-3 shadow-xl flex items-start gap-2.5 backdrop-blur-md bg-white/95 animate-slide-in ${
+            toast.tone === "error" ? "border-red-200 text-neutral-900" : "border-neutral-900 text-neutral-900"
           }`}
-          style={{ animation: "slideIn 0.35s ease-out" }}
         >
-          <Bell className={`h-4 w-4 mt-0.5 shrink-0 ${toast.tone === "error" ? "text-neutral-400" : "text-neutral-900"}`} />
-          <p className="text-sm leading-snug">{toast.message}</p>
+          <div
+            className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
+              toast.tone === "error" ? "bg-red-500" : "bg-emerald-500"
+            }`}
+          />
+          <p className="text-xs font-semibold leading-snug">{toast.message}</p>
         </div>
       )}
     </div>
