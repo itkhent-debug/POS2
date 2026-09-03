@@ -598,20 +598,23 @@ function FloatingChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-20 right-5 z-50 w-88 max-w-[calc(100vw-2.5rem)] h-[480px] rounded-3xl border border-neutral-200/90 bg-white/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden animate-pop">
+        <div className="fixed bottom-22 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] h-[520px] rounded-3xl border border-neutral-200/90 bg-white/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden animate-pop">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-neutral-100 bg-neutral-900 text-white shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
-                <Sparkles className="h-4 w-4" />
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 bg-neutral-900 text-white shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
+                <Sparkles className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold tracking-tight leading-tight">Brewm AI Assistant</h4>
-                <p className="text-[10px] text-neutral-400">Business analytics helper</p>
+                <h4 className="text-sm font-bold tracking-tight leading-tight">Brewm AI Assistant</h4>
+                <p className="text-[11px] text-neutral-400">Real-time business analytics</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-neutral-400 hover:text-white p-1 rounded-lg">
-              <X className="h-4 w-4" />
+            <button
+              onClick={() => setOpen(false)}
+              className="text-neutral-400 hover:text-white p-1.5 rounded-xl hover:bg-neutral-800 transition-colors"
+            >
+              <X className="h-4.5 w-4.5" />
             </button>
           </div>
 
@@ -619,21 +622,21 @@ function FloatingChatWidget() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
             {messages.length === 0 && (
               <div className="text-center py-6">
-                <div className="h-10 w-10 mx-auto rounded-full bg-amber-50 text-amber-700 flex items-center justify-center mb-3">
-                  <Sparkles className="h-5 w-5" />
+                <div className="h-12 w-12 mx-auto rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mb-3.5 border border-amber-200/50 shadow-sm">
+                  <Sparkles className="h-6 w-6" />
                 </div>
-                <p className="text-xs font-semibold text-neutral-800 mb-1">May maitutulong ako?</p>
-                <p className="text-[11px] text-neutral-400 max-w-[200px] mx-auto mb-4">
-                  Magtanong tungkol sa kita, best sellers, staff shift, o inventory.
+                <p className="text-sm font-bold text-neutral-900 mb-1">May maitutulong ako?</p>
+                <p className="text-xs text-neutral-500 max-w-[220px] mx-auto mb-5">
+                  Magtanong tungkol sa benta, best sellers, staff shift, o stock inventory.
                 </p>
-                <div className="flex flex-col gap-1.5 text-left">
+                <div className="flex flex-col gap-2 text-left">
                   {["Magkano kita ko ngayon?", "Anong best seller item?", "Sinong staff ang naka-duty?"].map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => sendMessage(prompt)}
-                      className="text-xs text-neutral-600 hover:text-neutral-900 bg-neutral-100/70 hover:bg-neutral-100 px-3 py-2 rounded-xl transition-colors text-left"
+                      className="text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-100/80 hover:bg-neutral-200/70 border border-neutral-200/60 px-3.5 py-2.5 rounded-xl transition-all text-left shadow-2xs hover:shadow-xs active:scale-[0.98]"
                     >
-                      "{prompt}"
+                      💬 "{prompt}"
                     </button>
                   ))}
                 </div>
@@ -642,8 +645,10 @@ function FloatingChatWidget() {
             {messages.map((m, idx) => (
               <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs whitespace-pre-wrap leading-relaxed ${
-                    m.role === "user" ? "bg-neutral-900 text-white rounded-tr-sm" : "bg-neutral-100 text-neutral-800 rounded-tl-sm"
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs whitespace-pre-wrap leading-relaxed shadow-2xs ${
+                    m.role === "user"
+                      ? "bg-neutral-900 text-white rounded-tr-xs"
+                      : "bg-neutral-100 text-neutral-900 border border-neutral-200/60 rounded-tl-xs font-normal"
                   }`}
                 >
                   {m.text}
@@ -652,42 +657,55 @@ function FloatingChatWidget() {
             ))}
             {sending && (
               <div className="flex justify-start">
-                <div className="bg-neutral-100 text-neutral-500 rounded-2xl rounded-tl-sm px-3.5 py-2 text-xs flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="bg-neutral-100 text-neutral-500 border border-neutral-200/60 rounded-2xl rounded-tl-xs px-4 py-2.5 text-xs flex items-center gap-2">
+                  <span className="text-neutral-600 font-medium">Nag-iisip si AI...</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer input */}
-          <div className="flex items-center gap-2 p-3 border-t border-neutral-100 bg-white shrink-0">
+          <div className="flex items-center gap-2 p-3.5 border-t border-neutral-100 bg-white shrink-0">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Ask a question..."
-              className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-xs outline-none focus:border-neutral-900 focus:bg-white transition-all"
+              placeholder="Ask AI a question..."
+              className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50/70 px-3.5 py-2.5 text-xs outline-none focus:border-neutral-900 focus:bg-white transition-all font-medium placeholder:text-neutral-400"
             />
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || sending}
-              className="h-8 w-8 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-200 text-white flex items-center justify-center transition-all shrink-0"
+              className="h-9 w-9 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-200 text-white flex items-center justify-center transition-all shrink-0 shadow-xs hover:scale-105 active:scale-95"
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Launcher Button */}
+      {/* Launcher Button - prominent, modern floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 h-13 w-13 rounded-full bg-neutral-900 hover:bg-black text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
-        title="Open AI Assistant"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-full bg-neutral-900 hover:bg-black text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all border border-neutral-700/80 cursor-pointer group"
+        title="Open Brewm AI Assistant"
       >
-        {open ? <X className="h-5 w-5" /> : <Sparkles className="h-5 w-5 text-amber-400" />}
+        {open ? (
+          <>
+            <X className="h-5 w-5 text-neutral-300 group-hover:text-white transition-colors" />
+            <span className="text-xs font-bold tracking-wide">Close AI</span>
+          </>
+        ) : (
+          <>
+            <div className="h-7 w-7 rounded-full bg-amber-400/20 text-amber-400 flex items-center justify-center border border-amber-400/30 shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-bold tracking-wide pr-1">AI Assistant</span>
+          </>
+        )}
       </button>
     </>
   );
