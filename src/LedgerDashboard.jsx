@@ -834,8 +834,8 @@ function buildBusinessSummary(orders, shifts, inventory, expenses) {
     todayRevenue: Math.round(todayRevenue * 100) / 100,
     todayProfit: Math.round(todayProfit * 100) / 100,
     mostRecentDateWithOrders: mostRecentDate || null,
-    mostRecentDateRevenue: Math.round(mostRecentDateRevenue * 100) / 100,
-    mostRecentDateProfit: Math.round(mostRecentDateProfit * 100) / 100,
+    mostRecentDateRevenue: Math.round(mostRecentRevenue * 100) / 100,
+    mostRecentDateProfit: Math.round(mostRecentProfit * 100) / 100,
     topProducts,
     salesPerStaff,
     lowStockItems: lowStock.map((it) => ({ name: it.name, quantity: it.quantity, unit: it.unit })),
@@ -848,6 +848,33 @@ function FloatingChatWidget() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+
+  // Ask the AI with one automatic retry — transient connection blips
+  // shouldn't surface as a dead-end error to the user.
+  async function askAI(text, summary) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(AI_ASSISTANT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, context: summary }),
+        });
+        const data = await res.json().catch(() => null);
+        if (data?.reply) return data.reply;
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          continue;
+        }
+        return `Paumanhin, hindi nasagot ang tanong mo ngayon (HTTP ${res.status}). Subukan muli.`;
+      } catch {
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          continue;
+        }
+        return "May problema sa koneksyon — hindi na-contact ang AI. I-check ang internet at subukan muli.";
+      }
+    }
+  }
 
   async function sendMessage(textToSend) {
     const text = (textToSend || input).trim();
@@ -869,13 +896,8 @@ function FloatingChatWidget() {
         Array.isArray(expensesRes.expenses) ? expensesRes.expenses : []
       );
 
-      const res = await fetch(AI_ASSISTANT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, context: summary }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", text: data?.reply || "Walang sagot na natanggap." }]);
+      const reply = await askAI(text, summary);
+      setMessages((prev) => [...prev, { role: "assistant", text: reply || "Walang sagot na natanggap." }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: "May error, subukan ulit." }]);
     } finally {
