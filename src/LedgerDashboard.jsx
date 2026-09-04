@@ -27,6 +27,15 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Banknote,
+  Clock3,
+  Award,
+  ReceiptText,
+  CalendarDays,
+  RotateCcw,
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
@@ -35,6 +44,7 @@ const SHIFTS_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-s
 const RESET_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-reset-data";
 
 const LEDGER_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-ledger-data";
+const EXPENSES_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-expenses";
 const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
@@ -88,7 +98,211 @@ const COLUMNS = [
   { key: "total", label: "Total" },
 ];
 
-function MiniDonut({ data, centerValue, centerLabel }) {
+function hourLabel(h) {
+  if (h === 0) return "12 AM";
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return "12 PM";
+  return `${h - 12} PM`;
+}
+
+function compactPeso(n) {
+  const v = Number(n) || 0;
+  if (Math.abs(v) >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(1)}k`;
+  return peso(v);
+}
+
+function todayManila() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+}
+
+function rowKey(o) {
+  return `${o.orderNumber}|${o.date}|${o.time}`;
+}
+
+let toastSeq = 0;
+
+function ToastStack({ toasts, onDismiss }) {
+  return (
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80 max-w-[calc(100vw-2rem)]">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`flex items-start gap-2.5 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl animate-slide-in ${
+            t.type === "error"
+              ? "border-rose-200/80 bg-rose-50/95 text-rose-700"
+              : t.type === "info"
+                ? "border-neutral-200/80 bg-white/95 text-neutral-700"
+                : "border-emerald-200/80 bg-emerald-50/95 text-emerald-700"
+          }`}
+        >
+          {t.type === "error" ? (
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+          )}
+          <p className="text-xs font-semibold leading-relaxed flex-1">{t.message}</p>
+          <button onClick={() => onDismiss(t.id)} className="shrink-0 opacity-50 hover:opacity-100 transition-opacity">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useToasts() {
+  const [toasts, setToasts] = useState([]);
+  const dismiss = (id) => setToasts((prev) => prev.filter((t) => t.id !== id));
+  const notify = (message, type = "success") => {
+    const id = ++toastSeq;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3400);
+  };
+  return { toasts, notify, dismiss };
+}
+
+function useEscKey(active, onClose) {
+  useEffect(() => {
+    if (!active) return;
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, onClose]);
+}
+
+function TableSkeleton({ rows = 8, cols = 8 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, r) => (
+        <tr key={r} className="animate-pulse" style={{ animationDelay: `${r * 60}ms` }}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <td key={c} className="px-3.5 py-3.5">
+              <div className="h-3 rounded-full bg-neutral-100" style={{ width: `${45 + ((r * 13 + c * 29) % 50)}%` }} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function KpiSkeleton({ count = 6 }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle animate-pulse">
+          <div className="h-2.5 w-16 rounded-full bg-neutral-100 mb-3" />
+          <div className="h-6 w-20 rounded-lg bg-neutral-100" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrderDetailModal({ order, onClose }) {
+  useEscKey(true, onClose);
+  const items = parseItems(order.items);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-fade-in" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-3xl border border-neutral-200 bg-white shadow-2xl overflow-hidden animate-pop"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-neutral-50/60">
+          <div>
+            <p className="font-mono-num text-sm font-bold text-neutral-900">Order #{order.orderNumber}</p>
+            <p className="text-[11px] text-neutral-400 font-medium">
+              {order.day ? `${order.day}, ` : ""}
+              {order.date} • {order.time}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1.5 rounded-xl hover:bg-neutral-100 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="flex items-center gap-3">
+            <span className="h-10 w-10 rounded-full bg-neutral-900 text-white text-sm font-bold flex items-center justify-center shrink-0">
+              {(order.customer || "G").charAt(0).toUpperCase()}
+            </span>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-neutral-900">{order.customer || "Guest"}</p>
+              <p className="text-[11px] text-neutral-400">Served by {order.staff || "—"}</p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="inline-flex items-center rounded-full bg-neutral-100 text-neutral-700 px-2 py-0.5 font-medium text-[11px] capitalize">
+                {order.paymentMethod}
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium text-[11px] ${
+                  order.orderType === "Dine-in" ? "bg-amber-50 text-amber-800 border border-amber-200/60" : "bg-stone-100 text-stone-700"
+                }`}
+              >
+                {order.orderType}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Items Ordered</p>
+            {items.length === 0 ? (
+              <p className="text-xs text-neutral-400">{order.items || "No items recorded."}</p>
+            ) : (
+              <div className="rounded-2xl border border-neutral-200/80 divide-y divide-neutral-100">
+                {items.map((it) => (
+                  <div key={it.name} className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs font-semibold text-neutral-800">{it.name}</span>
+                    <span className="font-mono-num text-xs font-bold text-neutral-500">x{it.qty}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl bg-neutral-50/80 border border-neutral-200/60 px-4 py-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500 font-medium">Subtotal</span>
+              <span className="font-mono-num font-semibold text-neutral-800">₱{peso(order.subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500 font-medium">Discount</span>
+              <span className="font-mono-num font-semibold text-neutral-800">−₱{peso(order.discount)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500 font-medium">Tax (5%)</span>
+              <span className="font-mono-num font-semibold text-neutral-800">₱{peso(order.tax)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-200/70">
+              <span className="text-neutral-900 font-bold">Total</span>
+              <span className="font-mono-num text-sm font-bold text-neutral-900">₱{peso(order.total)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500 font-medium">Est. Profit</span>
+              <span className={`font-mono-num font-bold ${Number(order.profit) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                ₱{peso(order.profit)}
+              </span>
+            </div>
+          </div>
+
+          {order.note && (
+            <div className="rounded-2xl bg-amber-50/70 border border-amber-200/60 px-4 py-3">
+              <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Note</p>
+              <p className="text-xs text-neutral-700 leading-relaxed">{order.note}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniDonut({ data, centerValue, centerLabel, formatValue }) {
+  const fmt = formatValue || ((v) => v);
   const total = data.reduce((s, d) => s + d.value, 0);
   const r = 45;
   const circumference = 2 * Math.PI * r;
@@ -140,7 +354,7 @@ function MiniDonut({ data, centerValue, centerLabel }) {
               <span className="text-neutral-600 font-medium truncate">{d.name}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="font-mono-num font-semibold text-neutral-800">{d.value}</span>
+              <span className="font-mono-num font-semibold text-neutral-800">{fmt(d.value)}</span>
               <span className="text-[11px] text-neutral-400 w-8 text-right font-mono-num">
                 {total ? ((d.value / total) * 100).toFixed(0) : 0}%
               </span>
@@ -323,6 +537,23 @@ function OverviewTab() {
     return [...orders].slice(-6).reverse();
   }, [orders]);
 
+  const topCustomers = useMemo(() => {
+    const tally = new Map();
+    for (const o of orders) {
+      const name = o.customer || "Guest";
+      const cur = tally.get(name) || { name, visits: 0, total: 0, last: "" };
+      cur.visits += 1;
+      cur.total += Number(o.total) || 0;
+      if (o.date && o.date > cur.last) cur.last = o.date;
+      tally.set(name, cur);
+    }
+    const avgOf = (c) => (c.visits ? c.total / c.visits : 0);
+    return Array.from(tally.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6)
+      .map((c) => ({ ...c, avg: avgOf(c) }));
+  }, [orders]);
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Top row: Sales trend */}
@@ -473,6 +704,47 @@ function OverviewTab() {
         </div>
       </div>
 
+      {/* Top Customers Leaderboard */}
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <Award className="h-4 w-4 text-amber-600" /> Top Customers
+            </h3>
+            <p className="text-xs text-neutral-400">Leaderboard by total spending</p>
+          </div>
+        </div>
+        {topCustomers.length === 0 ? (
+          <p className="text-xs text-neutral-400 py-8 text-center">No customer data yet.</p>
+        ) : (
+          <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+            {topCustomers.map((c, idx) => (
+              <div
+                key={c.name}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 transition-colors ${
+                  idx === 0 ? "bg-amber-50/70 border border-amber-200/60" : "bg-neutral-50/60 border border-neutral-200/60"
+                }`}
+              >
+                <span
+                  className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                    idx === 0 ? "bg-amber-500 text-white" : "bg-neutral-200 text-neutral-600"
+                  }`}
+                >
+                  {idx + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-neutral-900 truncate">{c.name}</p>
+                  <p className="text-[11px] text-neutral-400">
+                    {c.visits} visit{c.visits !== 1 ? "s" : ""} • avg ₱{peso(c.avg)} • last {c.last || "—"}
+                  </p>
+                </div>
+                <span className="font-mono-num text-xs font-bold text-neutral-900 shrink-0">₱{peso(c.total)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Recent Orders Cards */}
       <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
         <h3 className="text-sm font-semibold text-neutral-900 mb-1">Recent Activity</h3>
@@ -505,9 +777,11 @@ function OverviewTab() {
   );
 }
 
-function buildBusinessSummary(orders, shifts, inventory) {
+function buildBusinessSummary(orders, shifts, inventory, expenses) {
   const totalRevenue = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const totalProfit = orders.reduce((s, o) => s + (Number(o.profit) || 0), 0);
+  const totalExpenses = (expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const netProfit = totalProfit - totalExpenses;
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
   const todayOrders = orders.filter((o) => o.date === today);
   const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
@@ -539,11 +813,23 @@ function buildBusinessSummary(orders, shifts, inventory) {
   const lowStock = inventory.filter((it) => Number(it.quantity) <= Number(it.lowStockThreshold));
   const onDuty = shifts.filter((s) => s.status === "active").map((s) => s.staffName);
 
+  const expenseTally = new Map();
+  for (const e of expenses || []) {
+    const key = e.category || "Misc";
+    expenseTally.set(key, (expenseTally.get(key) || 0) + (Number(e.amount) || 0));
+  }
+  const expensesByCategory = Array.from(expenseTally.entries())
+    .map(([name, total]) => ({ name, total: Math.round(total * 100) / 100 }))
+    .sort((a, b) => b.total - a.total);
+
   return {
     todayDate: today,
     totalOrders: orders.length,
     totalRevenue: Math.round(totalRevenue * 100) / 100,
     totalProfit: Math.round(totalProfit * 100) / 100,
+    totalExpenses: Math.round(totalExpenses * 100) / 100,
+    netProfit: Math.round(netProfit * 100) / 100,
+    expensesByCategory,
     todayOrders: todayOrders.length,
     todayRevenue: Math.round(todayRevenue * 100) / 100,
     todayProfit: Math.round(todayProfit * 100) / 100,
@@ -570,15 +856,17 @@ function FloatingChatWidget() {
     setInput("");
     setSending(true);
     try {
-      const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
+      const [ordersRes, shiftsRes, inventoryRes, expensesRes] = await Promise.all([
         fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
         fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
         fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        fetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
       ]);
       const summary = buildBusinessSummary(
         Array.isArray(ordersRes.orders) ? ordersRes.orders : [],
         Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : [],
-        Array.isArray(inventoryRes.items) ? inventoryRes.items : []
+        Array.isArray(inventoryRes.items) ? inventoryRes.items : [],
+        Array.isArray(expensesRes.expenses) ? expensesRes.expenses : []
       );
 
       const res = await fetch(AI_ASSISTANT_URL, {
@@ -1036,6 +1324,474 @@ function InventoryTab() {
   );
 }
 
+const EXPENSE_CATEGORIES = ["Supplies", "Rent", "Utilities", "Salaries", "Marketing", "Maintenance", "Misc"];
+
+function ExpensesTab({ notify }) {
+  const [expenses, setExpenses] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [expMonth, setExpMonth] = useState("All");
+  const [expCategory, setExpCategory] = useState("All");
+  const [expQuery, setExpQuery] = useState("");
+  const [form, setForm] = useState({ description: "", category: "Supplies", amount: "", date: todayManila() });
+
+  useEscKey(modalOpen, () => setModalOpen(false));
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [expensesRes, ordersRes] = await Promise.all([
+        fetch(EXPENSES_API_URL).then((r) => r.json()),
+        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+      ]);
+      setExpenses(Array.isArray(expensesRes.expenses) ? expensesRes.expenses : []);
+      setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
+    } catch (err) {
+      setError("setup");
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const expMonths = useMemo(() => {
+    const set = new Set(expenses.map((e) => (e.date || "").slice(0, 7)).filter(Boolean));
+    return Array.from(set).sort().reverse();
+  }, [expenses]);
+
+  const expCategories = useMemo(() => {
+    const set = new Set(expenses.map((e) => e.category).filter(Boolean));
+    return Array.from(set).sort();
+  }, [expenses]);
+
+  const monthScoped = useMemo(() => {
+    const list = expMonth === "All" ? expenses : expenses.filter((e) => (e.date || "").startsWith(expMonth));
+    const total = list.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    return { total, count: list.length };
+  }, [expenses, expMonth]);
+
+  const monthProfit = useMemo(() => {
+    const list = expMonth === "All" ? orders : orders.filter((o) => o.month === expMonth);
+    return list.reduce((s, o) => s + (Number(o.profit) || 0), 0);
+  }, [orders, expMonth]);
+
+  const netProfit = monthProfit - monthScoped.total;
+
+  const filteredExpenses = useMemo(() => {
+    let list = expMonth === "All" ? expenses : expenses.filter((e) => (e.date || "").startsWith(expMonth));
+    if (expCategory !== "All") list = list.filter((e) => e.category === expCategory);
+    const q = expQuery.trim().toLowerCase();
+    if (q) list = list.filter((e) => (e.description || "").toLowerCase().includes(q) || (e.category || "").toLowerCase().includes(q));
+    return [...list].sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.id) - Number(a.id));
+  }, [expenses, expMonth, expCategory, expQuery]);
+
+  const categoryBreakdown = useMemo(() => {
+    const tally = new Map();
+    for (const e of filteredExpenses) {
+      const key = e.category || "Misc";
+      tally.set(key, (tally.get(key) || 0) + (Number(e.amount) || 0));
+    }
+    const total = Array.from(tally.values()).reduce((s, v) => s + v, 0);
+    return Array.from(tally.entries())
+      .map(([name, value], idx) => ({ name, value, pct: total ? (value / total) * 100 : 0, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredExpenses]);
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    if (!form.description.trim() || !form.amount) return;
+    setSaving(true);
+    try {
+      const res = await fetch(EXPENSES_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          description: form.description.trim(),
+          category: form.category,
+          amount: Number(form.amount),
+          date: form.date,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.success) throw new Error();
+      setForm({ description: "", category: "Supplies", amount: "", date: todayManila() });
+      setModalOpen(false);
+      notify(`Expense saved — ₱${peso(form.amount)}`);
+      await load();
+    } catch (err) {
+      notify("Couldn't save the expense. Is the n8n workflow active?", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    setDeletingId(id);
+    try {
+      const res = await fetch(EXPENSES_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.success) throw new Error();
+      setConfirmDeleteId(null);
+      notify("Expense deleted");
+      await load();
+    } catch (err) {
+      notify("Couldn't delete the expense. Is the n8n workflow active?", "error");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function exportCsv() {
+    const header = ["Date", "Description", "Category", "Amount"];
+    const lines = [header.join(",")];
+    for (const e of filteredExpenses) {
+      lines.push([e.date, `"${(e.description || "").replace(/"/g, '""')}"`, `"${(e.category || "").replace(/"/g, '""')}"`, e.amount].join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses-${expMonth === "All" ? "all" : expMonth}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    notify(`Exported ${filteredExpenses.length} expense${filteredExpenses.length !== 1 ? "s" : ""} to CSV`);
+  }
+
+  const hasFilters = expMonth !== "All" || expCategory !== "All" || expQuery.trim();
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+      {/* P&L Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+          <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+            <TrendingUp className="h-3.5 w-3.5" /> Est. Gross Profit
+          </div>
+          <p className="font-mono-num text-2xl font-bold text-neutral-900">₱{peso(monthProfit)}</p>
+          <p className="text-[10px] text-neutral-400 font-medium mt-1">{expMonth === "All" ? "All time, from orders" : `${monthLabel(expMonth)}, from orders`}</p>
+        </div>
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
+          <div className="flex items-center gap-1.5 text-rose-500 text-[11px] font-semibold uppercase tracking-wider mb-2">
+            <ReceiptText className="h-3.5 w-3.5" /> Total Expenses
+          </div>
+          <p className="font-mono-num text-2xl font-bold text-rose-600">−₱{peso(monthScoped.total)}</p>
+          <p className="text-[10px] text-neutral-400 font-medium mt-1">
+            {monthScoped.count} expense{monthScoped.count !== 1 ? "s" : ""} logged
+          </p>
+        </div>
+        <div className={`rounded-2xl border p-4 shadow-subtle ${netProfit >= 0 ? "border-emerald-200/80 bg-emerald-50/40" : "border-rose-200/80 bg-rose-50/40"}`}>
+          <div className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-2 ${netProfit >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+            <Wallet className="h-3.5 w-3.5" /> Net Profit
+          </div>
+          <p className={`font-mono-num text-2xl font-bold ${netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {netProfit < 0 ? "−" : ""}₱{peso(Math.abs(netProfit))}
+          </p>
+          <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${netProfit >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+            {netProfit >= 0 ? "Kumita ✓" : "Nalugi ⚠"} • after expenses
+          </p>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-neutral-900 tracking-tight">Expenses</h2>
+          <p className="text-xs text-neutral-400">Track operating costs to see real net profit</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={exportCsv}
+            disabled={filteredExpenses.length === 0}
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-neutral-900 hover:bg-black text-white text-xs font-semibold px-4 py-2 shadow-sm transition-all"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Expense
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <select
+          value={expMonth}
+          onChange={(e) => setExpMonth(e.target.value)}
+          className="rounded-xl border border-neutral-200/90 bg-white text-xs font-medium text-neutral-800 px-3.5 py-2.5 outline-none focus:border-neutral-900 shadow-sm transition-all"
+        >
+          <option value="All">All Months</option>
+          {expMonths.map((m) => (
+            <option key={m} value={m}>
+              {monthLabel(m)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={expCategory}
+          onChange={(e) => setExpCategory(e.target.value)}
+          className="rounded-xl border border-neutral-200/90 bg-white text-xs font-medium text-neutral-800 px-3.5 py-2.5 outline-none focus:border-neutral-900 shadow-sm transition-all"
+        >
+          <option value="All">All Categories</option>
+          {expCategories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        {hasFilters && (
+          <button
+            onClick={() => {
+              setExpMonth("All");
+              setExpCategory("All");
+              setExpQuery("");
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white text-xs font-semibold text-neutral-500 hover:text-neutral-900 px-3 py-2.5 shadow-sm transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </button>
+        )}
+        <div className="relative ml-auto w-full sm:w-72">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <input
+            value={expQuery}
+            onChange={(e) => setExpQuery(e.target.value)}
+            placeholder="Search expenses..."
+            className="w-full rounded-xl border border-neutral-200/90 bg-white pl-10 pr-3.5 py-2.5 text-xs outline-none focus:border-neutral-900 shadow-sm transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Category breakdown bars */}
+      {categoryBreakdown.length > 0 && (
+        <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+          <h3 className="text-sm font-semibold text-neutral-900 mb-1">Expenses by Category</h3>
+          <p className="text-xs text-neutral-400 mb-4">
+            Filtered view • ₱{peso(filteredExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0))} total
+          </p>
+          <div className="space-y-2.5">
+            {categoryBreakdown.map((c) => (
+              <div key={c.name} className="flex items-center gap-3">
+                <span className="text-xs font-medium text-neutral-600 w-28 shrink-0 truncate">{c.name}</span>
+                <div className="flex-1 h-4 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(c.pct, 4)}%`, backgroundColor: c.color }} />
+                </div>
+                <span className="font-mono-num text-xs font-semibold text-neutral-700 w-28 text-right shrink-0">
+                  ₱{peso(c.value)} <span className="text-neutral-400 font-normal">({c.pct.toFixed(0)}%)</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expenses Table */}
+      <div className="rounded-2xl border border-neutral-200/80 bg-white shadow-subtle overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-neutral-100 bg-neutral-50/60 text-neutral-400 uppercase tracking-wider font-semibold">
+                <th className="text-left px-5 py-3.5">Date</th>
+                <th className="text-left px-4 py-3.5">Description</th>
+                <th className="text-left px-4 py-3.5">Category</th>
+                <th className="text-left px-4 py-3.5">Amount</th>
+                <th className="text-left px-4 py-3.5">Logged</th>
+                <th className="text-right px-5 py-3.5">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {loading && <TableSkeleton rows={5} cols={6} />}
+              {!loading && error === "setup" && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12">
+                    <div className="flex flex-col items-center text-center max-w-md mx-auto">
+                      <div className="h-11 w-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 border border-amber-200/60">
+                        <ReceiptText className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-bold text-neutral-900 mb-1">Expenses tracking isn't set up yet</p>
+                      <p className="text-xs text-neutral-500 leading-relaxed">
+                        Import <span className="font-mono text-neutral-700">n8n/pos-expenses-workflow.json</span> into your n8n instance, create the{" "}
+                        <span className="font-mono text-neutral-700">expenses</span> MySQL table (SQL is in the workflow's setup note), then activate. This
+                        tab will start working right after.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && error && error !== "setup" && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-rose-500 font-medium">
+                    Couldn't load expenses. Check if the n8n workflow is active.
+                  </td>
+                </tr>
+              )}
+              {!loading && !error && filteredExpenses.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-neutral-400">
+                    No expenses recorded yet. Click "Add Expense" to log rent, supplies, utilities, and more.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                !error &&
+                filteredExpenses.map((e) => (
+                  <tr key={e.id} className="hover:bg-neutral-50/60 transition-colors group">
+                    <td className="px-5 py-3.5 text-neutral-500 whitespace-nowrap font-mono-num">{e.date}</td>
+                    <td className="px-4 py-3.5 font-semibold text-neutral-900 max-w-[320px] truncate" title={e.description}>
+                      {e.description}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center rounded-full bg-neutral-100 text-neutral-700 px-2 py-0.5 font-medium text-[11px]">
+                        {e.category || "Misc"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 font-mono-num font-bold text-rose-600 whitespace-nowrap">−₱{peso(e.amount)}</td>
+                    <td className="px-4 py-3.5 text-neutral-400 whitespace-nowrap font-mono-num text-[11px]">{e.createdAt || "—"}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      {confirmDeleteId === e.id ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleDelete(e.id)}
+                            disabled={deletingId === e.id}
+                            className="rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold text-[11px] px-2.5 py-1.5 transition-colors"
+                          >
+                            {deletingId === e.id ? "Deleting..." : "Confirm"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-semibold text-[11px] px-2.5 py-1.5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(e.id)}
+                          className="text-neutral-300 hover:text-rose-600 p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete expense"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add Expense Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-fade-in">
+          <div className="w-full max-w-sm rounded-3xl border border-neutral-200 bg-white shadow-2xl p-6 animate-pop">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-neutral-900 tracking-tight">Add Expense</h3>
+              <button onClick={() => setModalOpen(false)} className="text-neutral-400 hover:text-neutral-800 p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAdd} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-semibold text-neutral-600 mb-1 block">Description</label>
+                <input
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="e.g. Coffee beans restock, Meralco bill"
+                  autoFocus
+                  className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-neutral-600 mb-1 block">Category</label>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors bg-white"
+                >
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-neutral-600 mb-1 block">Amount (₱)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.amount}
+                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors font-mono-num"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-neutral-600 mb-1 block">Date</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                    className="w-full rounded-xl border border-neutral-200 px-3.5 py-2 text-xs outline-none focus:border-neutral-900 transition-colors font-mono-num"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1 rounded-xl border border-neutral-200 text-neutral-600 text-xs font-semibold py-2.5 hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !form.description.trim() || !form.amount}
+                  className="flex-1 rounded-xl bg-neutral-900 hover:bg-black disabled:bg-neutral-300 text-white text-xs font-semibold py-2.5 transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Expense"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function workHours(timeInTs, timeOutTs) {
   if (!timeInTs || !timeOutTs) return null;
   const inDate = new Date(timeInTs.replace(" ", "T"));
@@ -1260,13 +2016,24 @@ export default function LedgerDashboard() {
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [selectedStaff, setSelectedStaff] = useState("All");
   const [selectedDay, setSelectedDay] = useState("All");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [selected, setSelected] = useState(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [detailOrder, setDetailOrder] = useState(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState(null);
+  const { toasts, notify, dismiss: dismissToast } = useToasts();
+
+  useEscKey(resetOpen, () => {
+    if (!resetLoading) setResetOpen(false);
+  });
+  useEscKey(!!detailOrder, () => setDetailOrder(null));
 
   async function load() {
     setLoading(true);
@@ -1280,6 +2047,10 @@ export default function LedgerDashboard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function loadWithToast() {
+    load().then(() => notify(error ? "Couldn't refresh — check the n8n workflow" : "Ledger data refreshed", error ? "error" : "success"));
   }
 
   useEffect(() => {
@@ -1306,6 +2077,8 @@ export default function LedgerDashboard() {
     if (selectedMonth !== "All") list = list.filter((o) => o.month === selectedMonth);
     if (selectedStaff !== "All") list = list.filter((o) => o.staff === selectedStaff);
     if (selectedDay !== "All") list = list.filter((o) => o.date === selectedDay);
+    if (dateFrom) list = list.filter((o) => o.date && o.date >= dateFrom);
+    if (dateTo) list = list.filter((o) => o.date && o.date <= dateTo);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -1324,7 +2097,77 @@ export default function LedgerDashboard() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [orders, selectedMonth, selectedStaff, selectedDay, query, sortKey, sortDir]);
+  }, [orders, selectedMonth, selectedStaff, selectedDay, dateFrom, dateTo, query, sortKey, sortDir]);
+
+  const hasActiveFilters = selectedMonth !== "All" || selectedStaff !== "All" || selectedDay !== "All" || dateFrom || dateTo || query.trim();
+
+  function resetFilters() {
+    setSelectedMonth("All");
+    setSelectedStaff("All");
+    setSelectedDay("All");
+    setDateFrom("");
+    setDateTo("");
+    setQuery("");
+  }
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedMonth, selectedStaff, selectedDay, dateFrom, dateTo, query, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = useMemo(() => {
+    if (pageSize === "All") return filtered;
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
+
+  const pageSelectedCount = pageRows.filter((o) => selected.has(o.orderNumber)).length;
+  const allPageSelected = pageRows.length > 0 && pageSelectedCount === pageRows.length;
+
+  function toggleAllPage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) pageRows.forEach((o) => next.delete(o.orderNumber));
+      else pageRows.forEach((o) => next.add(o.orderNumber));
+      return next;
+    });
+  }
+
+  function exportSelectedCsv() {
+    const rows = filtered.filter((o) => selected.has(o.orderNumber));
+    const header = ["Order #", "Customer", "Staff", "Items", "Payment", "Order Type", "Day", "Date", "Time", "Subtotal", "Discount", "Tax", "Total"];
+    const lines = [header.join(",")];
+    for (const o of rows) {
+      lines.push(
+        [
+          o.orderNumber,
+          `"${(o.customer || "").replace(/"/g, '""')}"`,
+          `"${(o.staff || "").replace(/"/g, '""')}"`,
+          `"${(o.items || "").replace(/"/g, '""')}"`,
+          o.paymentMethod,
+          o.orderType,
+          o.day,
+          o.date,
+          o.time,
+          o.subtotal,
+          o.discount,
+          o.tax,
+          o.total,
+        ].join(",")
+      );
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ledger-selection-${rows.length}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    notify(`Exported ${rows.length} selected order${rows.length !== 1 ? "s" : ""} to CSV`);
+  }
 
   const summary = useMemo(() => {
     const revenue = filtered.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
@@ -1357,6 +2200,34 @@ export default function LedgerDashboard() {
       pct: total ? (p.qty / total) * 100 : 0,
       color: DONUT_COLORS[idx % DONUT_COLORS.length],
     }));
+  }, [filtered]);
+
+  const paymentBreakdown = useMemo(() => {
+    const tally = new Map();
+    for (const o of filtered) {
+      const key = (o.paymentMethod || "Other").trim() || "Other";
+      tally.set(key, (tally.get(key) || 0) + (Number(o.total) || 0));
+    }
+    return Array.from(tally.entries())
+      .map(([name, value], idx) => ({ name, value, color: DONUT_COLORS[idx % DONUT_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [filtered]);
+
+  const salesByHour = useMemo(() => {
+    const tally = new Map();
+    for (const o of filtered) {
+      const match = String(o.time || "").match(/^(\d{1,2})/);
+      if (!match) continue;
+      const hour = Number(match[1]);
+      if (hour < 0 || hour > 23) continue;
+      tally.set(hour, (tally.get(hour) || 0) + (Number(o.total) || 0));
+    }
+    const hours = Array.from(tally.keys()).sort((a, b) => a - b);
+    if (hours.length === 0) return [];
+    const full = [];
+    for (let h = hours[0]; h <= hours[hours.length - 1]; h++) full.push({ hour: h, total: tally.get(h) || 0 });
+    const max = Math.max(1, ...full.map((d) => d.total));
+    return full.map((d) => ({ ...d, pct: (d.total / max) * 100 }));
   }, [filtered]);
 
   function toggleSort(key) {
@@ -1411,9 +2282,10 @@ export default function LedgerDashboard() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    notify(`Exported ${rows.length} order${rows.length !== 1 ? "s" : ""} to CSV`);
   }
 
-  async function downloadFullBackupPdf(allOrders, allShifts, allInventory) {
+  async function downloadFullBackupPdf(allOrders, allShifts, allInventory, allExpenses) {
     const { jsPDF } = await import("jspdf");
     const autoTable = (await import("jspdf-autotable")).default;
 
@@ -1469,6 +2341,19 @@ export default function LedgerDashboard() {
       headStyles: { fillColor: [24, 24, 27] },
     });
 
+    if (Array.isArray(allExpenses) && allExpenses.length > 0) {
+      doc.addPage();
+      doc.setFontSize(13);
+      doc.text(`Expenses (${allExpenses.length})`, 14, 18);
+      autoTable(doc, {
+        startY: 24,
+        head: [["Date", "Description", "Category", "Amount"]],
+        body: allExpenses.map((e) => [e.date, e.description, e.category, `P${peso(e.amount)}`]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [24, 24, 27] },
+      });
+    }
+
     doc.save(`cafe-brewm-backup-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
@@ -1476,18 +2361,20 @@ export default function LedgerDashboard() {
     setResetLoading(true);
     setResetError(null);
     try {
-      const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
+      const [ordersRes, shiftsRes, inventoryRes, expensesRes] = await Promise.all([
         fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
         fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
         fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        fetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
       ]);
       const allOrders = ordersRes.orders || [];
       const allShifts = shiftsRes.shifts || [];
       const allInventory = inventoryRes.items || [];
+      const allExpenses = expensesRes.expenses || [];
 
-      await downloadFullBackupPdf(allOrders, allShifts, allInventory);
+      await downloadFullBackupPdf(allOrders, allShifts, allInventory, allExpenses);
 
-      const recordCount = allOrders.length + allShifts.length + allInventory.length;
+      const recordCount = allOrders.length + allShifts.length + allInventory.length + allExpenses.length;
       const minDelay = Math.min(4000, Math.max(1200, 400 + recordCount * 60));
 
       const [resetResult] = await Promise.all([
@@ -1554,7 +2441,7 @@ export default function LedgerDashboard() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={load}
+              onClick={loadWithToast}
               className="flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white text-xs font-semibold text-neutral-700 px-3.5 py-2 hover:bg-neutral-50 shadow-sm transition-all"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -1603,7 +2490,8 @@ export default function LedgerDashboard() {
                     <h3 className="text-base font-bold text-neutral-900">Reset all store records?</h3>
                   </div>
                   <p className="text-xs text-neutral-600 mb-4 leading-relaxed">
-                    This will permanently clear orders, customers, shifts, and inventory from the database. A comprehensive backup PDF will automatically be generated and downloaded for your archives.
+                    This will permanently clear orders, customers, shifts, inventory, and expenses from the database. A comprehensive backup PDF will
+                    automatically be generated and downloaded for your archives.
                   </p>
                   {resetError && <p className="text-xs text-rose-600 mb-3 font-semibold">{resetError}</p>}
                   <label className="text-xs font-semibold text-neutral-600 mb-1.5 block">
@@ -1683,6 +2571,17 @@ export default function LedgerDashboard() {
               <Users className="h-3.5 w-3.5" />
               Staff Shifts
             </button>
+            <button
+              onClick={() => setActiveTab("expenses")}
+              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${
+                activeTab === "expenses"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <ReceiptText className="h-3.5 w-3.5" />
+              Expenses
+            </button>
           </div>
         </div>
 
@@ -1693,10 +2592,15 @@ export default function LedgerDashboard() {
           <InventoryTab />
         ) : activeTab === "staff" ? (
           <StaffTab />
+        ) : activeTab === "expenses" ? (
+          <ExpensesTab notify={notify} />
         ) : (
           /* Orders Ledger Tab */
           <div className="space-y-5 animate-fade-in">
             {/* KPI Summary Cards */}
+            {loading ? (
+              <KpiSkeleton />
+            ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-subtle">
                 <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
@@ -1746,6 +2650,7 @@ export default function LedgerDashboard() {
                 <p className="font-mono-num text-2xl font-bold text-neutral-900">₱{peso(summary.avg)}</p>
               </div>
             </div>
+            )}
 
             {/* Top Products Donut Row */}
             <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
@@ -1821,6 +2726,49 @@ export default function LedgerDashboard() {
               )}
             </div>
 
+            {/* Payment + Hourly Breakdown Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+                <h3 className="text-sm font-semibold text-neutral-900 mb-1">Payment Methods</h3>
+                <p className="text-xs text-neutral-400 mb-4">Revenue share per payment type</p>
+                {paymentBreakdown.length === 0 ? (
+                  <p className="text-xs text-neutral-400 py-6 text-center">No payment data yet.</p>
+                ) : (
+                  <MiniDonut
+                    data={paymentBreakdown}
+                    centerValue={`₱${compactPeso(summary.revenue)}`}
+                    centerLabel="revenue"
+                    formatValue={(v) => `₱${compactPeso(v)}`}
+                  />
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-subtle">
+                <h3 className="text-sm font-semibold text-neutral-900 mb-1">Sales by Hour</h3>
+                <p className="text-xs text-neutral-400 mb-4">When your customers order the most</p>
+                {salesByHour.length === 0 ? (
+                  <p className="text-xs text-neutral-400 py-6 text-center">No time data yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                    {salesByHour.map((h) => (
+                      <div key={h.hour} className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-neutral-500 w-16 shrink-0 font-mono-num">{hourLabel(h.hour)}</span>
+                        <div className="flex-1 h-4 rounded-full bg-neutral-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(h.pct, h.total ? 8 : 0)}%`, backgroundColor: "#18181b" }}
+                          />
+                        </div>
+                        <span className="font-mono-num text-xs font-semibold text-neutral-700 w-20 text-right shrink-0">
+                          ₱{compactPeso(h.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Filter Toolbar */}
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="relative">
@@ -1868,6 +2816,37 @@ export default function LedgerDashboard() {
                 </select>
               </div>
 
+              <div className="flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3 py-1.5 shadow-sm">
+                <CalendarDays className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                <input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-transparent text-xs font-mono-num text-neutral-700 outline-none w-[105px]"
+                  title="From date"
+                />
+                <span className="text-neutral-300 text-xs">–</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="bg-transparent text-xs font-mono-num text-neutral-700 outline-none w-[105px]"
+                  title="To date"
+                />
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white text-xs font-semibold text-neutral-500 hover:text-neutral-900 px-3 py-2.5 shadow-sm transition-all"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset
+                </button>
+              )}
+
               <div className="relative ml-auto w-full sm:w-72">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <input
@@ -1880,12 +2859,13 @@ export default function LedgerDashboard() {
             </div>
 
             {/* Sub-filtered Summary Pill */}
-            {(selectedStaff !== "All" || selectedDay !== "All" || selectedMonth !== "All") && (
+            {(selectedStaff !== "All" || selectedDay !== "All" || selectedMonth !== "All" || dateFrom || dateTo) && (
               <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-subtle">
                 <div>
                   <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Filtered View</p>
                   <p className="text-xs font-bold text-neutral-900 mt-0.5">
                     {selectedStaff !== "All" ? selectedStaff : "All Staff"} • {selectedDay !== "All" ? selectedDay : "All Days"} • {selectedMonth !== "All" ? monthLabel(selectedMonth) : "All Time"}
+                    {dateFrom || dateTo ? ` • ${dateFrom || "start"} → ${dateTo || "now"}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-5">
@@ -1905,36 +2885,63 @@ export default function LedgerDashboard() {
               </div>
             )}
 
+            {/* Selection Action Bar */}
+            {selected.size > 0 && (
+              <div className="rounded-2xl border border-neutral-900/10 bg-neutral-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-3 shadow-lg animate-pop">
+                <p className="text-xs font-semibold">
+                  <span className="font-mono-num">{selected.size}</span> order{selected.size !== 1 ? "s" : ""} selected
+                  <span className="text-neutral-400 font-medium"> — {pageSelectedCount} on this page</span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportSelectedCsv}
+                    className="flex items-center gap-1.5 rounded-xl bg-white text-neutral-900 text-xs font-semibold px-3.5 py-2 hover:bg-neutral-100 transition-all"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Export Selected CSV
+                  </button>
+                  <button
+                    onClick={() => setSelected(new Set())}
+                    className="rounded-xl border border-neutral-600 text-neutral-300 hover:text-white text-xs font-semibold px-3.5 py-2 transition-all"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Orders Table */}
             <div className="rounded-2xl border border-neutral-200/80 bg-white shadow-subtle overflow-hidden">
-              <div className="overflow-x-auto custom-scrollbar">
+              <div className="overflow-x-auto custom-scrollbar max-h-[65vh] overflow-y-auto">
                 <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-neutral-100 bg-neutral-50/60 text-neutral-400 uppercase tracking-wider font-semibold">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b border-neutral-100 bg-neutral-50/95 backdrop-blur text-neutral-400 uppercase tracking-wider font-semibold">
                       <th className="w-10 px-4 py-3.5">
-                        <input type="checkbox" disabled className="rounded border-neutral-300" />
+                        <input
+                          type="checkbox"
+                          checked={allPageSelected}
+                          onChange={toggleAllPage}
+                          title="Select all on this page"
+                          className="rounded border-neutral-300 cursor-pointer"
+                        />
                       </th>
                       {COLUMNS.map((col) => (
                         <th key={col.key} className="text-left px-3.5 py-3.5 whitespace-nowrap">
                           <button
                             onClick={() => toggleSort(col.key)}
-                            className="flex items-center gap-1 hover:text-neutral-800 transition-colors"
+                            className={`flex items-center gap-1 hover:text-neutral-800 transition-colors ${
+                              sortKey === col.key ? "text-neutral-800" : ""
+                            }`}
                           >
                             {col.label}
-                            <ArrowUpDown className="h-3 w-3" />
+                            <ArrowUpDown className={`h-3 w-3 ${sortKey === col.key ? "text-neutral-800" : "opacity-40"}`} />
                           </button>
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {loading && (
-                      <tr>
-                        <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-neutral-400">
-                          Loading ledger records...
-                        </td>
-                      </tr>
-                    )}
+                    {loading && <TableSkeleton rows={8} cols={COLUMNS.length + 1} />}
                     {!loading && error && (
                       <tr>
                         <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-rose-500 font-medium">
@@ -1944,21 +2951,32 @@ export default function LedgerDashboard() {
                     )}
                     {!loading && !error && filtered.length === 0 && (
                       <tr>
-                        <td colSpan={COLUMNS.length + 1} className="text-center py-14 text-neutral-400">
-                          No matching orders found.
+                        <td colSpan={COLUMNS.length + 1} className="text-center py-14">
+                          <Receipt className="h-6 w-6 text-neutral-300 mx-auto mb-2" />
+                          <p className="text-neutral-400 font-medium">No matching orders found.</p>
+                          {hasActiveFilters && (
+                            <button onClick={resetFilters} className="mt-2 text-xs font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
+                              Clear filters
+                            </button>
+                          )}
                         </td>
                       </tr>
                     )}
                     {!loading &&
                       !error &&
-                      filtered.map((o) => (
-                        <tr key={o.orderNumber + o.date + o.time} className="hover:bg-neutral-50/60 transition-colors">
-                          <td className="px-4 py-3">
+                      pageRows.map((o) => (
+                        <tr
+                          key={rowKey(o)}
+                          onClick={() => setDetailOrder(o)}
+                          className={`hover:bg-neutral-50/60 transition-colors cursor-pointer ${selected.has(o.orderNumber) ? "bg-neutral-50" : ""}`}
+                          title="Click to view order details"
+                        >
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={selected.has(o.orderNumber)}
                               onChange={() => toggleRow(o.orderNumber)}
-                              className="rounded border-neutral-300"
+                              className="rounded border-neutral-300 cursor-pointer"
                             />
                           </td>
                           <td className="px-3.5 py-3 font-mono-num font-bold text-neutral-900">#{o.orderNumber}</td>
@@ -1993,10 +3011,82 @@ export default function LedgerDashboard() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Footer */}
+              {!loading && !error && filtered.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 bg-neutral-50/40 px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] text-neutral-500 font-medium">
+                      Showing{" "}
+                      <span className="font-mono-num font-bold text-neutral-800">
+                        {pageSize === "All" ? filtered.length : (safePage - 1) * pageSize + 1}–{pageSize === "All" ? filtered.length : Math.min(safePage * pageSize, filtered.length)}
+                      </span>{" "}
+                      of <span className="font-mono-num font-bold text-neutral-800">{filtered.length}</span> orders
+                    </p>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(e.target.value === "All" ? "All" : Number(e.target.value))}
+                      className="rounded-lg border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-600 px-2 py-1 outline-none focus:border-neutral-900"
+                    >
+                      <option value={25}>25 / page</option>
+                      <option value={50}>50 / page</option>
+                      <option value={100}>100 / page</option>
+                      <option value="All">All</option>
+                    </select>
+                  </div>
+                  {pageSize !== "All" && totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                        className="h-7 w-7 rounded-lg border border-neutral-200 bg-white flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </button>
+                      {Array.from({ length: totalPages })
+                        .map((_, i) => i + 1)
+                        .filter(
+                          (p) =>
+                            p === 1 ||
+                            p === totalPages ||
+                            Math.abs(p - safePage) <= 1
+                        )
+                        .map((p, idx, arr) => (
+                          <span key={p} className="flex items-center">
+                            {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-0.5 text-neutral-300 text-xs">…</span>}
+                            <button
+                              onClick={() => setPage(p)}
+                              className={`h-7 min-w-7 px-1.5 rounded-lg text-[11px] font-bold font-mono-num transition-all ${
+                                p === safePage
+                                  ? "bg-neutral-900 text-white"
+                                  : "border border-neutral-200 bg-white text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </span>
+                        ))}
+                      <button
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                        className="h-7 w-7 rounded-lg border border-neutral-200 bg-white flex items-center justify-center text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Order Detail Modal */}
+      {detailOrder && <OrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />}
+
+      {/* Toasts */}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       {/* Floating AI Assistant Chat Widget */}
       <FloatingChatWidget />
