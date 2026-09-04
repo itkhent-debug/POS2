@@ -21,6 +21,8 @@ import {
   X,
   User,
   Clock,
+  ChevronDown,
+  Timer,
   Sparkles,
   ShoppingBag,
 } from "lucide-react";
@@ -32,6 +34,7 @@ const STAFF_ACCOUNTS = [
 ];
 const CLOCKIN_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-clockin";
 const CLOCKOUT_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-clockout";
+const SHIFTS_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-shifts";
 const SHIFT_KEY = "cafe-brewm-pos-shift";
 const SESSION_LOG_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-session-log";
 
@@ -193,6 +196,19 @@ function StaffLoginScreen({ onLogin }) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [onDuty, setOnDuty] = useState([]);
+
+  useEffect(() => {
+    fetch(SHIFTS_API_URL)
+      .then((r) => r.json())
+      .then((d) => {
+        const active = (Array.isArray(d?.shifts) ? d.shifts : [])
+          .filter((s) => s.status === "active")
+          .map((s) => s.staffName);
+        setOnDuty(active);
+      })
+      .catch(() => {});
+  }, []);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -201,7 +217,7 @@ function StaffLoginScreen({ onLogin }) {
     );
     if (match) {
       setError("");
-      onLogin(match.name);
+      onLogin(match.name, onDuty.includes(match.name));
     } else {
       setError("Incorrect username or password. Please try again.");
     }
@@ -221,6 +237,21 @@ function StaffLoginScreen({ onLogin }) {
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 tracking-tight font-display">Cafe Brewm POS</h1>
           <p className="text-xs text-neutral-500 font-medium tracking-wide uppercase mt-1">Staff Terminal Login</p>
+
+          {onDuty.length > 0 && (
+            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5 animate-fade-in">
+              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mr-0.5">On duty now:</span>
+              {onDuty.map((n) => (
+                <span
+                  key={n}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {n}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <form
@@ -258,7 +289,9 @@ function StaffLoginScreen({ onLogin }) {
             type="submit"
             className="w-full rounded-xl bg-neutral-900 hover:bg-black active:scale-[0.99] text-white text-sm font-semibold py-3 transition-all shadow-sm"
           >
-            Sign in & Clock In
+            {onDuty.some((n) => n.toLowerCase() === name.trim().toLowerCase())
+              ? "Sign in & Resume Shift"
+              : "Sign in & Clock In"}
           </button>
 
           <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-400">
@@ -299,8 +332,42 @@ export default function PosApp() {
   });
   const [clockOutInfo, setClockOutInfo] = useState(null);
   const [clockBarActive, setClockBarActive] = useState(false);
+  const [resumedShift, setResumedShift] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [nowTick, setNowTick] = useState(Date.now());
 
   const searchInputRef = useRef(null);
+
+  // Live tick for the on-duty duration timer in the profile dropdown
+  useEffect(() => {
+    if (authPhase !== "pos") return;
+    const id = setInterval(() => setNowTick(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, [authPhase]);
+
+  // Cross-device session sync: the server's active shift is the source of truth.
+  // If this staff's shift is closed from another device, log this device out too.
+  useEffect(() => {
+    if (authPhase !== "pos" || !currentStaff) return;
+    const check = async () => {
+      try {
+        const res = await fetch(SHIFTS_API_URL).then((r) => r.json());
+        const shifts = Array.isArray(res?.shifts) ? res.shifts : [];
+        const stillActive = shifts.some((s) => s.staffName === currentStaff && s.status === "active");
+        if (!stillActive) {
+          localStorage.removeItem(SHIFT_KEY);
+          setProfileOpen(false);
+          setCurrentStaff(null);
+          setClockInInfo(null);
+          setAuthPhase("login");
+        }
+      } catch {
+        // Offline or webhook down — keep the local session rather than logging out.
+      }
+    };
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, [authPhase, currentStaff]);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -322,31 +389,56 @@ export default function PosApp() {
     const sessionToken = crypto.randomUUID();
     logSession("staff", staffName, "login", sessionToken);
 
-    const [info] = await Promise.all([
-      fetch(CLOCKIN_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffName }),
-      })
-        .then((r) => r.json())
-        .catch(() => null),
-      new Promise((resolve) => setTimeout(resolve, 5000)),
-    ]);
+    // The server's active shift is the source of truth. If this staff already
+    // has an active shift (e.g. logged in on another device/tab), resume it
+    // instead of creating a duplicate one.
+    const shiftsRes = await fetch(SHIFTS_API_URL)
+      .then((r) => r.json())
+      .catch(() => null);
+    const activeShift = (Array.isArray(shiftsRes?.shifts) ? shiftsRes.shifts : []).find(
+      (s) => s.staffName === staffName && s.status === "active"
+    );
 
-    const now = new Date();
-    const fallback = {
-      day: now.toLocaleDateString("en-US", { weekday: "long" }),
-      date: now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
-      time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-    };
+    let resolvedClockIn;
+    if (activeShift) {
+      setResumedShift(true);
+      resolvedClockIn = {
+        day: activeShift.dayIn,
+        date: activeShift.dateIn,
+        time: activeShift.timeIn,
+        ts: activeShift.timeInTs
+          ? new Date(activeShift.timeInTs.replace(" ", "T") + "Z").getTime()
+          : null,
+      };
+    } else {
+      setResumedShift(false);
+      const [info] = await Promise.all([
+        fetch(CLOCKIN_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ staffName }),
+        })
+          .then((r) => r.json())
+          .catch(() => null),
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]);
 
-    const resolvedClockIn = info?.success ? info : fallback;
+      resolvedClockIn = info?.success
+        ? { ...info, ts: Date.now() }
+        : {
+            ts: Date.now(),
+            day: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+            date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          };
+    }
+
     setCurrentStaff(staffName);
     setClockInInfo(resolvedClockIn);
     localStorage.setItem(SHIFT_KEY, JSON.stringify({ staffName, clockInInfo: resolvedClockIn, sessionToken }));
     setAuthPhase("timein");
 
-    setTimeout(() => setAuthPhase("pos"), 2600);
+    setTimeout(() => setAuthPhase("pos"), resumedShift ? 1800 : 2600);
   }
 
   async function handleLogout() {
@@ -453,6 +545,16 @@ export default function PosApp() {
   const tax = taxable * TAX_RATE;
   const total = taxable + tax;
   const totalItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
+
+  const shiftDurationLabel = useMemo(() => {
+    if (!clockInInfo?.ts) return "—";
+    const mins = Math.max(0, Math.floor((nowTick - clockInInfo.ts) / 60000));
+    if (mins < 1) return "Just started";
+    if (mins < 60) return `${mins}m`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }, [clockInInfo, nowTick]);
 
   function addToCart(product) {
     setCart((prev) => {
@@ -628,10 +730,17 @@ export default function PosApp() {
             </>
           ) : (
             <>
-              <div className="mb-3 text-5xl animate-pop">☕</div>
-              <p className="font-semibold text-xl text-neutral-900 font-display mb-2">Shift Started</p>
+              <div className="mb-3 text-5xl animate-pop">{resumedShift ? "🔄" : "☕"}</div>
+              <p className="font-semibold text-xl text-neutral-900 font-display mb-2">
+                {resumedShift ? "Shift Resumed" : "Shift Started"}
+              </p>
               <p className="text-3xl font-bold text-neutral-900 font-mono-num">{clockInInfo?.time}</p>
               <p className="text-xs text-neutral-500 mt-1 font-medium">{clockInInfo?.day}, {clockInInfo?.date}</p>
+              {resumedShift && (
+                <p className="mt-2.5 mx-auto max-w-[240px] rounded-xl bg-amber-50 border border-amber-200/70 px-3 py-1.5 text-[11px] font-semibold text-amber-700">
+                  Naka-time-in ka na kanina pa — itinuloy lang namin ang shift mo. Hindi ito nadoble.
+                </p>
+              )}
               <div className="mt-5 pt-4 border-t border-neutral-100">
                 <p className="text-xs text-neutral-600 font-medium">Have a wonderful shift, <span className="font-bold text-neutral-900">{currentStaff}</span>!</p>
               </div>
@@ -758,13 +867,81 @@ export default function PosApp() {
               )}
             </div>
 
-            {/* Staff Pill & Logout */}
+            {/* Staff Profile Dropdown & Logout */}
             <div className="flex items-center gap-2 pl-2 border-l border-neutral-200/80">
-              <div className="flex items-center gap-2 py-1 px-2 rounded-xl bg-neutral-100/80 border border-neutral-200/60">
-                <div className="h-6 w-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {currentStaff?.[0]?.toUpperCase()}
-                </div>
-                <span className="hidden sm:inline text-xs font-semibold text-neutral-800">{currentStaff}</span>
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className={`flex items-center gap-2 py-1 px-2 rounded-xl border transition-all ${
+                    profileOpen
+                      ? "bg-white border-neutral-300 shadow-sm"
+                      : "bg-neutral-100/80 border-neutral-200/60 hover:border-neutral-300"
+                  }`}
+                  title="Staff profile"
+                >
+                  <div className="relative">
+                    <div className="h-6 w-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {currentStaff?.[0]?.toUpperCase()}
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  </div>
+                  <span className="hidden sm:inline text-xs font-semibold text-neutral-800">{currentStaff}</span>
+                  <ChevronDown className={`h-3 w-3 text-neutral-400 transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {profileOpen && (
+                  <>
+                    {/* Invisible backdrop to close the dropdown */}
+                    <div className="fixed inset-0 z-20" onClick={() => setProfileOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-neutral-200 bg-white shadow-2xl z-30 overflow-hidden animate-pop">
+                      {/* Profile header */}
+                      <div className="p-4 border-b border-neutral-100 bg-gradient-to-b from-neutral-50 to-white">
+                        <div className="flex items-center gap-3">
+                          <div className="h-11 w-11 rounded-2xl bg-neutral-900 text-white flex items-center justify-center text-lg font-bold shrink-0">
+                            {currentStaff?.[0]?.toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-neutral-900 truncate">{currentStaff}</p>
+                            <span className="inline-flex items-center gap-1.5 mt-0.5 rounded-full bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              On Duty
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Shift details */}
+                      <div className="p-3 space-y-2 border-b border-neutral-100">
+                        <div className="flex items-center justify-between rounded-xl bg-neutral-50/70 border border-neutral-200/60 px-3 py-2">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500">
+                            <Clock className="h-3.5 w-3.5" /> Time In
+                          </span>
+                          <span className="font-mono-num text-xs font-bold text-neutral-900">{clockInInfo?.time ?? "—"}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl bg-neutral-50/70 border border-neutral-200/60 px-3 py-2">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500">
+                            <Timer className="h-3.5 w-3.5" /> On-duty duration
+                          </span>
+                          <span className="font-mono-num text-xs font-bold text-neutral-900">{shiftDurationLabel}</span>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 font-medium px-1 leading-relaxed">
+                          Naka-sync sa lahat ng device. Kung mag-logout ka sa ibang phone o PC, magsa-sign out din dito.
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="p-3">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100/80 text-red-600 border border-red-200/60 text-xs font-semibold py-2.5 transition-colors"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          Clock Out & Logout
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               <button
                 onClick={handleLogout}
