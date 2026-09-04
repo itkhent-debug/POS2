@@ -2372,7 +2372,13 @@ export default function LedgerDashboard() {
       const allInventory = inventoryRes.items || [];
       const allExpenses = expensesRes.expenses || [];
 
-      await downloadFullBackupPdf(allOrders, allShifts, allInventory, allExpenses);
+      try {
+        await downloadFullBackupPdf(allOrders, allShifts, allInventory, allExpenses);
+      } catch (pdfErr) {
+        setResetError("Couldn't generate the backup PDF (connection issue). Nothing was deleted — check your connection and try again.");
+        setResetLoading(false);
+        return;
+      }
 
       const recordCount = allOrders.length + allShifts.length + allInventory.length + allExpenses.length;
       const minDelay = Math.min(4000, Math.max(1200, 400 + recordCount * 60));
