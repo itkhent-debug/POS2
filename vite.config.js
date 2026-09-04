@@ -4,6 +4,10 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [react()],
+  preview: {
+    host: "0.0.0.0",
+    allowedHosts: true,
+  },
   build: {
     rollupOptions: {
       input: {
