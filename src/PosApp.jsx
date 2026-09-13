@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { apiFetch } from "./apiFetch";
 import {
   Search,
   Plus,
@@ -39,7 +40,7 @@ const SHIFT_KEY = "cafe-brewm-pos-shift";
 const SESSION_LOG_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-session-log";
 
 function logSession(type, name, action, token) {
-  fetch(SESSION_LOG_URL, {
+  apiFetch(SESSION_LOG_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, name, action, token }),
@@ -199,7 +200,7 @@ function StaffLoginScreen({ onLogin }) {
   const [onDuty, setOnDuty] = useState([]);
 
   useEffect(() => {
-    fetch(SHIFTS_API_URL)
+    apiFetch(SHIFTS_API_URL)
       .then((r) => r.json())
       .then((d) => {
         const active = (Array.isArray(d?.shifts) ? d.shifts : [])
@@ -351,7 +352,7 @@ export default function PosApp() {
     if (authPhase !== "pos" || !currentStaff) return;
     const check = async () => {
       try {
-        const res = await fetch(SHIFTS_API_URL).then((r) => r.json());
+        const res = await apiFetch(SHIFTS_API_URL).then((r) => r.json());
         const shifts = Array.isArray(res?.shifts) ? res.shifts : [];
         const stillActive = shifts.some((s) => s.staffName === currentStaff && s.status === "active");
         if (!stillActive) {
@@ -392,7 +393,7 @@ export default function PosApp() {
     // The server's active shift is the source of truth. If this staff already
     // has an active shift (e.g. logged in on another device/tab), resume it
     // instead of creating a duplicate one.
-    const shiftsRes = await fetch(SHIFTS_API_URL)
+    const shiftsRes = await apiFetch(SHIFTS_API_URL)
       .then((r) => r.json())
       .catch(() => null);
     const activeShift = (Array.isArray(shiftsRes?.shifts) ? shiftsRes.shifts : []).find(
@@ -413,7 +414,7 @@ export default function PosApp() {
     } else {
       setResumedShift(false);
       const [info] = await Promise.all([
-        fetch(CLOCKIN_URL, {
+        apiFetch(CLOCKIN_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ staffName }),
@@ -453,7 +454,7 @@ export default function PosApp() {
 
     const [outInfo] = await Promise.all([
       currentStaff
-        ? fetch(CLOCKOUT_URL, {
+        ? apiFetch(CLOCKOUT_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ staffName: currentStaff }),
@@ -607,7 +608,7 @@ export default function PosApp() {
 
   async function sendToLedger(payload) {
     try {
-      const res = await fetch(N8N_WEBHOOK_URL, {
+      const res = await apiFetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

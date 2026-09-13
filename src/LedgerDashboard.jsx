@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { apiFetch } from "./apiFetch";
 import {
   Search,
   Download,
@@ -52,7 +53,7 @@ const SESSION_LOG_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos
 const AI_ASSISTANT_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/ai-assistant";
 
 function logSession(type, name, action, token) {
-  fetch(SESSION_LOG_URL, {
+  apiFetch(SESSION_LOG_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type, name, action, token }),
@@ -444,9 +445,9 @@ function OverviewTab() {
     setLoading(true);
     try {
       const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
-        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
-        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
-        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        apiFetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        apiFetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
       ]);
       setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
       setShifts(Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : []);
@@ -854,7 +855,7 @@ function FloatingChatWidget() {
   async function askAI(text, summary) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await fetch(AI_ASSISTANT_URL, {
+        const res = await apiFetch(AI_ASSISTANT_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text, context: summary }),
@@ -884,10 +885,10 @@ function FloatingChatWidget() {
     setSending(true);
     try {
       const [ordersRes, shiftsRes, inventoryRes, expensesRes] = await Promise.all([
-        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
-        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
-        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
-        fetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
+        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        apiFetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        apiFetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        apiFetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
       ]);
       const summary = buildBusinessSummary(
         Array.isArray(ordersRes.orders) ? ordersRes.orders : [],
@@ -1127,7 +1128,7 @@ function InventoryTab() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(INVENTORY_API_URL);
+      const res = await apiFetch(INVENTORY_API_URL);
       const data = await res.json();
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
@@ -1146,7 +1147,7 @@ function InventoryTab() {
     if (!form.name.trim() || !form.quantity) return;
     setSaving(true);
     try {
-      await fetch(INVENTORY_API_URL, {
+      await apiFetch(INVENTORY_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1369,8 +1370,8 @@ function ExpensesTab({ notify }) {
     setError(null);
     try {
       const [expensesRes, ordersRes] = await Promise.all([
-        fetch(EXPENSES_API_URL).then((r) => r.json()),
-        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        apiFetch(EXPENSES_API_URL).then((r) => r.json()),
+        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
       ]);
       setExpenses(Array.isArray(expensesRes.expenses) ? expensesRes.expenses : []);
       setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
@@ -1434,7 +1435,7 @@ function ExpensesTab({ notify }) {
     if (!form.description.trim() || !form.amount) return;
     setSaving(true);
     try {
-      const res = await fetch(EXPENSES_API_URL, {
+      const res = await apiFetch(EXPENSES_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1461,7 +1462,7 @@ function ExpensesTab({ notify }) {
   async function handleDelete(id) {
     setDeletingId(id);
     try {
-      const res = await fetch(EXPENSES_API_URL, {
+      const res = await apiFetch(EXPENSES_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", id }),
@@ -1832,7 +1833,7 @@ function StaffTab() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(SHIFTS_API_URL);
+      const res = await apiFetch(SHIFTS_API_URL);
       const data = await res.json();
       setShifts(Array.isArray(data.shifts) ? data.shifts : []);
     } catch (err) {
@@ -2061,7 +2062,7 @@ export default function LedgerDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(LEDGER_API_URL);
+      const res = await apiFetch(LEDGER_API_URL);
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
@@ -2384,10 +2385,10 @@ export default function LedgerDashboard() {
     setResetError(null);
     try {
       const [ordersRes, shiftsRes, inventoryRes, expensesRes] = await Promise.all([
-        fetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
-        fetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
-        fetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
-        fetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
+        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        apiFetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
+        apiFetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        apiFetch(EXPENSES_API_URL).then((r) => r.json()).catch(() => ({ expenses: [] })),
       ]);
       const allOrders = ordersRes.orders || [];
       const allShifts = shiftsRes.shifts || [];
@@ -2406,7 +2407,7 @@ export default function LedgerDashboard() {
       const minDelay = Math.min(4000, Math.max(1200, 400 + recordCount * 60));
 
       const [resetResult] = await Promise.all([
-        fetch(RESET_API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+        apiFetch(RESET_API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
           .then((r) => r.json())
           .catch(() => null),
         new Promise((resolve) => setTimeout(resolve, minDelay)),
