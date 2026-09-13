@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "./apiFetch";
 import {
@@ -3119,6 +3120,7 @@ export default function LedgerDashboard() {
 
       {/* Floating AI Assistant Chat Widget */}
       <FloatingChatWidget />
+      <Analytics />
     </div>
   );
 }
