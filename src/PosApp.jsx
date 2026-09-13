@@ -32,11 +32,11 @@ const STAFF_ACCOUNTS = [
   { name: "Juan", password: "juan123" },
   { name: "Maria", password: "maria123" },
 ];
-const CLOCKIN_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-clockin";
-const CLOCKOUT_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-clockout";
-const SHIFTS_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-shifts";
+const CLOCKIN_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-clockin";
+const CLOCKOUT_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-clockout";
+const SHIFTS_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-shifts";
 const SHIFT_KEY = "cafe-brewm-pos-shift";
-const SESSION_LOG_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-session-log";
+const SESSION_LOG_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-session-log";
 
 function logSession(type, name, action, token) {
   fetch(SESSION_LOG_URL, {
@@ -186,7 +186,7 @@ const TEMP_SIZE_CATEGORIES = ["Espresso"];
 const SIZE_ONLY_CATEGORIES = ["Milk Tea", "Fruit Tea", "Iced Coffee", "Blended", "Frappe"];
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
-const N8N_WEBHOOK_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-order";
+const N8N_WEBHOOK_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-order";
 
 function money(n) {
   return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

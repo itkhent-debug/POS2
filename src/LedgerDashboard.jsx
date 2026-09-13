@@ -39,17 +39,17 @@ import {
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
-const INVENTORY_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-inventory";
-const SHIFTS_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-shifts";
-const RESET_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-reset-data";
+const INVENTORY_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-inventory";
+const SHIFTS_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-shifts";
+const RESET_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-reset-data";
 
-const LEDGER_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-ledger-data";
-const EXPENSES_API_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-expenses";
+const LEDGER_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-ledger-data";
+const EXPENSES_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-expenses";
 const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
-const SESSION_LOG_URL = "https://n8n-production-b0b3.up.railway.app/webhook/pos-session-log";
-const AI_ASSISTANT_URL = "https://n8n-production-b0b3.up.railway.app/webhook/ai-assistant";
+const SESSION_LOG_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-session-log";
+const AI_ASSISTANT_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/ai-assistant";
 
 function logSession(type, name, action, token) {
   fetch(SESSION_LOG_URL, {
