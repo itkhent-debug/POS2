@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { apiFetch } from "./apiFetch";
 import {
   Search,
@@ -1532,6 +1533,7 @@ export default function PosApp() {
           <p className="text-xs font-semibold leading-snug">{toast.message}</p>
         </div>
       )}
+      <Analytics />
     </div>
   );
 }
