@@ -33,11 +33,11 @@ const STAFF_ACCOUNTS = [
   { name: "Juan", password: "juan123" },
   { name: "Maria", password: "maria123" },
 ];
-const CLOCKIN_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-clockin";
-const CLOCKOUT_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-clockout";
-const SHIFTS_API_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-shifts";
+const CLOCKIN_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-clockin";
+const CLOCKOUT_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-clockout";
+const SHIFTS_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-shifts";
 const SHIFT_KEY = "cafe-brewm-pos-shift";
-const SESSION_LOG_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-session-log";
+const SESSION_LOG_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-session-log";
 
 function logSession(type, name, action, token) {
   apiFetch(SESSION_LOG_URL, {
@@ -158,7 +158,10 @@ const PRODUCTS = [
   { id: 81, name: "Red Velvet Frappe", category: "Frappe", price: 69, icon: CupSoda },
   { id: 82, name: "Taro Frappe", category: "Frappe", price: 69, icon: CupSoda },
   { id: 83, name: "Cheesecake Frappe", category: "Frappe", price: 69, icon: CupSoda },
-];
+].map((p) => ({
+  ...p,
+  image: `/products/${p.id}.jpg`,
+}));
 
 const CATEGORIES = [
   "All Items",
@@ -187,7 +190,7 @@ const TEMP_SIZE_CATEGORIES = ["Espresso"];
 const SIZE_ONLY_CATEGORIES = ["Milk Tea", "Fruit Tea", "Iced Coffee", "Blended", "Frappe"];
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
-const N8N_WEBHOOK_URL = "https://setback-catalyze-had.ngrok-free.dev/webhook/pos-order";
+const N8N_WEBHOOK_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-order";
 
 function money(n) {
   return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -563,7 +566,7 @@ export default function PosApp() {
       if (existing) {
         return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + 1 } : i));
       }
-      return [...prev, { id: product.id, name: product.name, price: product.price, qty: 1 }];
+      return [...prev, { id: product.id, name: product.name, price: product.price, image: product.image, qty: 1 }];
     });
   }
 
@@ -586,7 +589,7 @@ export default function PosApp() {
     const price = product.price + (sizeOption?.extra || 0);
     const id = mode === "tempSize" ? `${product.id}-${temp}-${size}` : `${product.id}-${size}`;
     const name = mode === "tempSize" ? `${product.name} (${temp}, ${size})` : `${product.name} (${size})`;
-    addToCart({ id, name, price });
+    addToCart({ id, name, price, image: product.image });
     setVariantModal(null);
   }
 
@@ -1107,24 +1110,45 @@ export default function PosApp() {
                 >
                   {/* Quantity In Cart Badge */}
                   {inCartQty > 0 && (
-                    <span className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded-full bg-neutral-900 text-white font-mono-num text-[11px] font-bold shadow-sm animate-pop">
+                    <span className="absolute top-2.5 right-2.5 z-10 px-2.5 py-1 rounded-full bg-neutral-900/90 backdrop-blur-xs text-white font-mono-num text-[11px] font-bold shadow-md animate-pop">
                       {inCartQty} in cart
                     </span>
                   )}
 
-                  {/* Icon & Category Tag */}
-                  <div>
-                    <div className="h-14 w-14 rounded-xl bg-neutral-100/90 group-hover:bg-neutral-200/80 flex items-center justify-center mb-3 transition-colors">
-                      <Icon className="h-6 w-6 text-neutral-800 group-hover:scale-110 transition-transform duration-200" strokeWidth={1.75} />
+                  {/* Product Image Banner */}
+                  <div className="relative w-full h-32 sm:h-36 rounded-xl overflow-hidden bg-neutral-100 mb-2.5 shadow-2xs">
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        const fb = e.currentTarget.parentElement?.querySelector(".fallback-icon");
+                        if (fb) fb.classList.remove("hidden");
+                      }}
+                    />
+                    <div className="fallback-icon hidden w-full h-full flex items-center justify-center bg-neutral-100 text-neutral-400">
+                      <Icon className="h-8 w-8 text-neutral-600" strokeWidth={1.5} />
                     </div>
-                    <p className="font-semibold text-neutral-900 text-sm leading-snug line-clamp-2">
-                      {p.name}
-                    </p>
-                    {hasVariants && (
-                      <span className="inline-block mt-1 text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded uppercase tracking-wider">
-                        {hasTempSize ? "Sizes & Temp" : "Sizes available"}
-                      </span>
-                    )}
+                    {/* Category indicator badge */}
+                    <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] font-medium text-white tracking-wide">
+                      {p.category}
+                    </span>
+                  </div>
+
+                  {/* Name & Variants */}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <p className="font-semibold text-neutral-900 text-sm leading-snug line-clamp-2">
+                        {p.name}
+                      </p>
+                      {hasVariants && (
+                        <span className="inline-block mt-1 text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded uppercase tracking-wider">
+                          {hasTempSize ? "Sizes & Temp" : "Sizes available"}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Price & Add Indicator */}
@@ -1223,8 +1247,15 @@ export default function PosApp() {
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="group rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-2.5 flex items-center justify-between gap-2 hover:border-neutral-300 hover:bg-neutral-50 transition-all"
+                className="group rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-2.5 flex items-center justify-between gap-2.5 hover:border-neutral-300 hover:bg-neutral-50 transition-all"
               >
+                {item.image && (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-10 w-10 rounded-lg object-cover border border-neutral-200/60 shadow-2xs shrink-0"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-neutral-900 leading-snug truncate">{item.name}</p>
                   <p className="font-mono-num text-[11px] font-bold text-neutral-600 mt-0.5">
@@ -1408,14 +1439,21 @@ export default function PosApp() {
       {variantModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-xs px-4 animate-fade-in">
           <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-display text-base font-bold text-neutral-900">{variantModal.product.name}</h3>
+            <div className="flex items-center gap-3.5 mb-4 pb-3.5 border-b border-neutral-100">
+              {variantModal.product.image && (
+                <img
+                  src={variantModal.product.image}
+                  alt={variantModal.product.name}
+                  className="h-14 w-14 rounded-xl object-cover border border-neutral-200/80 shadow-2xs shrink-0"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-base font-bold text-neutral-900 truncate">{variantModal.product.name}</h3>
                 <p className="text-xs text-neutral-400">Select drink temperature and size</p>
               </div>
               <button
                 onClick={() => setVariantModal(null)}
-                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg"
+                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
