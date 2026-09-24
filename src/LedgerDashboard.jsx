@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { apiFetch } from "./apiFetch";
+import { apiFetch, N8N_WEBHOOK_BASE } from "./apiFetch";
 import {
   Search,
   Download,
@@ -40,17 +40,17 @@ import {
 } from "lucide-react";
 import logo from "./assets/logo.jpg";
 
-const INVENTORY_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-inventory";
-const SHIFTS_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-shifts";
-const RESET_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-reset-data";
+const INVENTORY_API_URL = `${N8N_WEBHOOK_BASE}/pos-inventory`;
+const SHIFTS_API_URL = `${N8N_WEBHOOK_BASE}/pos-shifts`;
+const RESET_API_URL = `${N8N_WEBHOOK_BASE}/pos-reset-data`;
 
-const LEDGER_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-ledger-data";
-const EXPENSES_API_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-expenses";
+const LEDGER_API_URL = `${N8N_WEBHOOK_BASE}/pos-ledger-data`;
+const EXPENSES_API_URL = `${N8N_WEBHOOK_BASE}/pos-expenses`;
 const ADMIN_USERNAME = "admincaffe";
 const ADMIN_PASSWORD = "caffeprox12";
 const AUTH_KEY = "cafe-brewm-ledger-auth";
-const SESSION_LOG_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/pos-session-log";
-const AI_ASSISTANT_URL = "https://upc-publicity-loaded-evaluated.trycloudflare.com/webhook/ai-assistant";
+const SESSION_LOG_URL = `${N8N_WEBHOOK_BASE}/pos-session-log`;
+const AI_ASSISTANT_URL = `${N8N_WEBHOOK_BASE}/ai-assistant`;
 
 function logSession(type, name, action, token) {
   apiFetch(SESSION_LOG_URL, {
@@ -1663,7 +1663,7 @@ function ExpensesTab({ notify }) {
                       <p className="text-sm font-bold text-neutral-900 mb-1">Expenses tracking isn't set up yet</p>
                       <p className="text-xs text-neutral-500 leading-relaxed">
                         Import <span className="font-mono text-neutral-700">n8n/pos-expenses-workflow.json</span> into your n8n instance, create the{" "}
-                        <span className="font-mono text-neutral-700">expenses</span> MySQL table (SQL is in the workflow's setup note), then activate. This
+                        <span className="font-mono text-neutral-700">expenses</span> Postgres table (SQL is in the workflow's setup note), then activate. This
                         tab will start working right after.
                       </p>
                     </div>
