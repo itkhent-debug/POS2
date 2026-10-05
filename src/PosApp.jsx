@@ -191,6 +191,51 @@ const SIZE_ONLY_CATEGORIES = ["Milk Tea", "Fruit Tea", "Iced Coffee", "Blended",
 const TAX_RATE = 0.05;
 const COST_MARGIN = 0.4; // estimated cost as a % of price, used for profit/loss reporting
 const N8N_WEBHOOK_URL = `${N8N_WEBHOOK_BASE}/pos-order`;
+const LEDGER_API_URL = `${N8N_WEBHOOK_BASE}/pos-ledger-data`;
+const PENDING_ORDERS_KEY = "cafe-brewm-pending-orders";
+const LAST_ORDER_NUMBER_KEY = "cafe-brewm-last-order-number";
+const PENDING_RETRY_MS = 20000;
+
+function readPendingOrders() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PENDING_ORDERS_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingOrders(list) {
+  try {
+    localStorage.setItem(PENDING_ORDERS_KEY, JSON.stringify(list));
+  } catch {
+    // Storage full or blocked — nothing more we can do locally.
+  }
+}
+
+function readLastOrderNumber() {
+  const n = Number(localStorage.getItem(LAST_ORDER_NUMBER_KEY));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Sends one order to n8n. Throws on failure; `err.retryable` is false only when the ledger
+// explicitly rejected the order (retrying the same payload would be rejected again).
+async function postOrder(payload) {
+  let res;
+  try {
+    res = await apiFetch(N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    throw Object.assign(new Error("Network error"), { retryable: true });
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw Object.assign(new Error(data?.message || `HTTP ${res.status}`), { retryable: true });
+  if (!data?.success) throw Object.assign(new Error(data?.message || "Rejected by ledger"), { retryable: false });
+  return data;
+}
 
 function money(n) {
   return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -494,7 +539,12 @@ export default function PosApp() {
   const [discountPct, setDiscountPct] = useState(0);
   const [note, setNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [orderNumber, setOrderNumber] = useState(248);
+  const [orderNumber, setOrderNumber] = useState(() => {
+    const pendingMax = Math.max(0, ...readPendingOrders().map((o) => Number(o.orderNumber) || 0));
+    return Math.max(readLastOrderNumber(), pendingMax) + 1;
+  });
+  const [pendingCount, setPendingCount] = useState(() => readPendingOrders().length);
+  const flushingRef = useRef(false);
   const [orderStatus, setOrderStatus] = useState("idle"); // idle | loading | success
   const [barActive, setBarActive] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -526,6 +576,59 @@ export default function PosApp() {
     setBellRing(true);
     bellTimer.current = setTimeout(() => setBellRing(false), 1200);
   }
+
+  // Continue numbering after the highest order the ledger already has, so a page reload or a
+  // second device doesn't restart at the same number.
+  async function syncOrderNumber() {
+    try {
+      const data = await apiFetch(LEDGER_API_URL).then((r) => r.json());
+      const orders = Array.isArray(data?.orders) ? data.orders : [];
+      const serverMax = Math.max(0, ...orders.map((o) => Number(o.orderNumber) || 0));
+      setOrderNumber((n) => Math.max(n, serverMax + 1));
+    } catch {
+      // Offline — keep the locally tracked number.
+    }
+  }
+
+  // Re-sends orders that couldn't reach n8n, oldest first. Stops at the first order that still
+  // fails with a retryable error so the original order sequence is preserved.
+  async function flushPendingOrders() {
+    if (flushingRef.current) return;
+    const queue = readPendingOrders();
+    if (queue.length === 0) return;
+    flushingRef.current = true;
+    let handled = 0;
+    let synced = 0;
+    try {
+      for (const payload of queue) {
+        try {
+          await postOrder(payload);
+          synced++;
+        } catch (err) {
+          if (err.retryable) break;
+        }
+        handled++;
+      }
+    } finally {
+      // Orders queued while flushing were appended, so dropping the first `handled` entries is safe.
+      const rest = readPendingOrders().slice(handled);
+      writePendingOrders(rest);
+      setPendingCount(rest.length);
+      flushingRef.current = false;
+    }
+    if (synced > 0) showToast(`${synced} offline order${synced === 1 ? "" : "s"} synced to ledger`, "success");
+  }
+
+  useEffect(() => {
+    syncOrderNumber();
+    flushPendingOrders();
+    const id = setInterval(flushPendingOrders, PENDING_RETRY_MS);
+    window.addEventListener("online", flushPendingOrders);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("online", flushPendingOrders);
+    };
+  }, []);
 
   const categoryCounts = useMemo(() => {
     const counts = { "All Items": PRODUCTS.length };
@@ -610,19 +713,18 @@ export default function PosApp() {
   }
 
   async function sendToLedger(payload) {
+    const label = `Order #${String(payload.orderNumber).padStart(4, "0")}`;
     try {
-      const res = await apiFetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => null);
-      return {
-        text: data?.message || `Order #${String(payload.orderNumber).padStart(4, "0")} synced to ledger!`,
-        tone: "success",
-      };
+      const data = await postOrder(payload);
+      return { text: data.message || `${label} synced to ledger!`, tone: "success" };
     } catch (err) {
-      return { text: "Order placed, but not synced to ledger (check n8n connection).", tone: "error" };
+      if (!err.retryable) {
+        return { text: `${label} was rejected by the ledger: ${err.message}`, tone: "error" };
+      }
+      const queue = [...readPendingOrders(), payload];
+      writePendingOrders(queue);
+      setPendingCount(queue.length);
+      return { text: `${label} saved offline — it will sync to the ledger automatically once n8n is reachable.`, tone: "error" };
     }
   }
 
@@ -633,6 +735,10 @@ export default function PosApp() {
     const profit = (subtotal - itemsCost) * (1 - discountPct / 100);
 
     const payload = {
+      // clientId lets n8n ignore a duplicate if a retry re-sends an order that already arrived;
+      // placedAt keeps the real order time even when the order syncs later from the offline queue.
+      clientId: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      placedAt: new Date().toISOString(),
       orderNumber,
       customerName: customerName.trim() || "Guest",
       items: cart.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
@@ -661,7 +767,12 @@ export default function PosApp() {
     setDiscountPct(0);
     setNote("");
     setCustomerName("");
-    setOrderNumber((n) => n + 1);
+    try {
+      localStorage.setItem(LAST_ORDER_NUMBER_KEY, String(payload.orderNumber));
+    } catch {
+      // Storage blocked — the ledger sync on next load still restores numbering.
+    }
+    setOrderNumber((n) => Math.max(n, payload.orderNumber + 1));
     setOrderStatus("success");
     showToast(result.text, result.tone);
 
@@ -1214,6 +1325,16 @@ export default function PosApp() {
                 #{String(orderNumber).padStart(4, "0")}
               </span>
               <p className="text-[10px] text-neutral-400 mt-0.5">{today}</p>
+              {pendingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={flushPendingOrders}
+                  title="Orders saved offline. Click to retry syncing now."
+                  className="mt-1 inline-block px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[10px] font-semibold text-amber-700 hover:bg-amber-100"
+                >
+                  {pendingCount} pending sync
+                </button>
+              )}
             </div>
           </div>
 

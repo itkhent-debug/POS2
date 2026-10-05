@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch, N8N_WEBHOOK_BASE } from "./apiFetch";
 import {
   Search,
@@ -161,6 +161,26 @@ function useToasts() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3400);
   };
   return { toasts, notify, dismiss };
+}
+
+const AUTO_REFRESH_MS = 15000;
+
+// Keeps a tab close to real time: re-runs `refresh` silently on an interval and whenever the
+// browser tab becomes visible again. Paused while the tab is hidden to avoid wasted requests.
+function useAutoRefresh(refresh, intervalMs = AUTO_REFRESH_MS) {
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  useEffect(() => {
+    function tick() {
+      if (document.visibilityState === "visible") refreshRef.current({ silent: true });
+    }
+    const id = setInterval(tick, intervalMs);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [intervalMs]);
 }
 
 function useEscKey(active, onClose) {
@@ -441,25 +461,29 @@ function OverviewTab() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
-    setLoading(true);
+  async function load({ silent = false } = {}) {
+    if (!silent) setLoading(true);
+    // On a silent background refresh, a failed request keeps the data already on screen.
+    const fetchList = (url, fallback) =>
+      apiFetch(url).then((r) => r.json()).catch(() => (silent ? null : fallback));
     try {
       const [ordersRes, shiftsRes, inventoryRes] = await Promise.all([
-        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
-        apiFetch(SHIFTS_API_URL).then((r) => r.json()).catch(() => ({ shifts: [] })),
-        apiFetch(INVENTORY_API_URL).then((r) => r.json()).catch(() => ({ items: [] })),
+        fetchList(LEDGER_API_URL, { orders: [] }),
+        fetchList(SHIFTS_API_URL, { shifts: [] }),
+        fetchList(INVENTORY_API_URL, { items: [] }),
       ]);
-      setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
-      setShifts(Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : []);
-      setInventory(Array.isArray(inventoryRes.items) ? inventoryRes.items : []);
+      if (ordersRes) setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
+      if (shiftsRes) setShifts(Array.isArray(shiftsRes.shifts) ? shiftsRes.shifts : []);
+      if (inventoryRes) setInventory(Array.isArray(inventoryRes.items) ? inventoryRes.items : []);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     load();
   }, []);
+  useAutoRefresh(load);
 
   const orderTypeBreakdown = useMemo(() => {
     const tally = new Map();
@@ -1124,23 +1148,27 @@ function InventoryTab() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", category: "", quantity: "", unit: "pcs", lowStockThreshold: "5" });
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  async function load({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiFetch(INVENTORY_API_URL);
       const data = await res.json();
       setItems(Array.isArray(data.items) ? data.items : []);
+      setError(null);
     } catch (err) {
-      setError("Couldn't load inventory. Check if the n8n workflow is active.");
+      if (!silent) setError("Couldn't load inventory. Check if the n8n workflow is active.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     load();
   }, []);
+  useAutoRefresh(load);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -1365,27 +1393,33 @@ function ExpensesTab({ notify }) {
 
   useEscKey(modalOpen, () => setModalOpen(false));
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  async function load({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const [expensesRes, ordersRes] = await Promise.all([
         apiFetch(EXPENSES_API_URL).then((r) => r.json()),
-        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => ({ orders: [] })),
+        apiFetch(LEDGER_API_URL).then((r) => r.json()).catch(() => (silent ? null : { orders: [] })),
       ]);
       setExpenses(Array.isArray(expensesRes.expenses) ? expensesRes.expenses : []);
-      setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
+      if (ordersRes) setOrders(Array.isArray(ordersRes.orders) ? ordersRes.orders : []);
+      setError(null);
     } catch (err) {
-      setError("setup");
-      setExpenses([]);
+      if (!silent) {
+        setError("setup");
+        setExpenses([]);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     load();
   }, []);
+  useAutoRefresh(load);
 
   const expMonths = useMemo(() => {
     const set = new Set(expenses.map((e) => (e.date || "").slice(0, 7)).filter(Boolean));
@@ -1829,23 +1863,27 @@ function StaffTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  async function load({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiFetch(SHIFTS_API_URL);
       const data = await res.json();
       setShifts(Array.isArray(data.shifts) ? data.shifts : []);
+      setError(null);
     } catch (err) {
-      setError("Couldn't load staff records. Check if the n8n workflow is active.");
+      if (!silent) setError("Couldn't load staff records. Check if the n8n workflow is active.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     load();
   }, []);
+  useAutoRefresh(load);
 
   async function downloadPdf(shift) {
     const { jsPDF } = await import("jspdf");
@@ -2058,27 +2096,33 @@ export default function LedgerDashboard() {
   });
   useEscKey(!!detailOrder, () => setDetailOrder(null));
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  async function load({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const res = await apiFetch(LEDGER_API_URL);
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setError(null);
+      return true;
     } catch (err) {
-      setError("Couldn't load ledger data. Check if the n8n workflow is active.");
+      if (!silent) setError("Couldn't load ledger data. Check if the n8n workflow is active.");
+      return false;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   function loadWithToast() {
-    load().then(() => notify(error ? "Couldn't refresh — check the n8n workflow" : "Ledger data refreshed", error ? "error" : "success"));
+    load().then((ok) => notify(ok ? "Ledger data refreshed" : "Couldn't refresh — check the n8n workflow", ok ? "success" : "error"));
   }
 
   useEffect(() => {
     load();
   }, []);
+  useAutoRefresh(load);
 
   const months = useMemo(() => {
     const set = new Set(orders.map((o) => o.month).filter(Boolean));
