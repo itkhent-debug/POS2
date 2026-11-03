@@ -277,12 +277,10 @@ function StaffLoginScreen({ onLogin }) {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-7">
           <div className="relative mb-3.5">
-            <img
-              src={logo}
-              alt="Cafe Brewm"
-              className="h-20 w-20 rounded-2xl object-cover shadow-md ring-4 ring-white"
-            />
-            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            <div className="h-20 w-20 rounded-full overflow-hidden shadow-md ring-4 ring-white bg-white">
+              <img src={logo} alt="Cafe Brewm" className="h-full w-full object-cover scale-[1.06]" />
+            </div>
+            <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 tracking-tight font-display">Cafe Brewm POS</h1>
           <p className="text-xs text-neutral-500 font-medium tracking-wide uppercase mt-1">Staff Terminal Login</p>
@@ -874,11 +872,9 @@ export default function PosApp() {
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="relative">
-              <img
-                src={logo}
-                alt="Cafe Brewm"
-                className="h-9 w-9 rounded-xl object-cover shadow-sm ring-1 ring-neutral-200"
-              />
+              <div className="h-9 w-9 rounded-full overflow-hidden shadow-sm ring-1 ring-neutral-200 bg-white">
+                <img src={logo} alt="Cafe Brewm" className="h-full w-full object-cover scale-[1.06]" />
+              </div>
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
             <div>
