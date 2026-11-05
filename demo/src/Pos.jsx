@@ -22,7 +22,7 @@ function StaffLogin() {
   function submit(e) {
     e.preventDefault();
     const ok = DEMO_STAFF.find((s) => s.name === name && s.password === password);
-    if (!ok) return setError("Mali ang password.");
+    if (!ok) return setError("Incorrect password.");
     actions.staffLogin(name);
   }
 
@@ -43,7 +43,7 @@ function StaffLogin() {
           className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm outline-none focus:border-neutral-900 focus:bg-white" />
         {error && <p className="text-xs text-rose-600 font-medium mt-2">{error}</p>}
         <button className="w-full mt-5 rounded-xl bg-neutral-900 text-white text-sm font-bold py-3 hover:bg-neutral-800 active:scale-[0.99] transition">Time In</button>
-        <a href="#/ledger" className="block text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 mt-3">Pumunta sa Ledger →</a>
+        <a href="#/ledger" className="block text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 mt-3">Go to Ledger →</a>
       </form>
     </div>
   );
@@ -84,7 +84,7 @@ export default function Pos() {
       date: now.toISOString().slice(0, 10),
     });
     setCart([]); setDiscountPct(0); setCustomer("");
-    setToast(`Order #${String(nextNumber).padStart(4, "0")} na-save`);
+    setToast(`Order #${String(nextNumber).padStart(4, "0")} saved`);
     setTimeout(() => setToast(""), 2600);
   }
 
@@ -134,7 +134,7 @@ export default function Pos() {
             ))}
           </div>
           <div className="min-h-[96px] max-h-64 overflow-y-auto divide-y divide-neutral-100">
-            {cart.length === 0 && <p className="text-xs text-neutral-400 py-6 text-center">Wala pang item. Pindutin ang menu para magdagdag.</p>}
+            {cart.length === 0 && <p className="text-xs text-neutral-400 py-6 text-center">No items yet. Tap a menu item to add it.</p>}
             {cart.map((i) => (
               <div key={i.id} className="flex items-center gap-2 py-2">
                 <div className="flex-1 min-w-0"><div className="text-sm font-semibold truncate">{i.name}</div><div className="text-xs text-neutral-500">₱{money(i.price)}</div></div>

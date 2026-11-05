@@ -13,7 +13,7 @@ function AdminLogin() {
   function submit(e) {
     e.preventDefault();
     if (u === DEMO_ADMIN.username && p === DEMO_ADMIN.password) actions.adminLogin();
-    else setErr("Mali ang username o password.");
+    else setErr("Incorrect username or password.");
   }
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -28,7 +28,7 @@ function AdminLogin() {
         <input type="password" value={p} onChange={(e) => { setP(e.target.value); setErr(""); }} placeholder="Password" className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm outline-none focus:border-neutral-900 focus:bg-white" />
         {err && <p className="text-xs text-rose-600 font-medium mt-2">{err}</p>}
         <button className="w-full mt-5 rounded-xl bg-neutral-900 text-white text-sm font-bold py-3 hover:bg-neutral-800">Login</button>
-        <a href="#/" className="block text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 mt-3">← Bumalik sa POS</a>
+        <a href="#/" className="block text-center text-xs font-semibold text-neutral-500 hover:text-neutral-900 mt-3">← Back to POS</a>
       </form>
     </div>
   );
